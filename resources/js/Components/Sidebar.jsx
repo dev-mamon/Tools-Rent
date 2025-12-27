@@ -1,4 +1,5 @@
 import React from "react";
+import { Link, usePage } from "@inertiajs/react";
 import {
     LayoutDashboard,
     List,
@@ -10,40 +11,73 @@ import {
 } from "lucide-react";
 
 const Sidebar = () => {
+    const { url } = usePage(); // বর্তমান URL চেক করার জন্য
+
     const menuItems = [
         {
             icon: <LayoutDashboard size={20} />,
             label: "Dashboard",
-            active: true,
+            link: route("dashboard"),
+            active: url === "/dashboard",
         },
-        { icon: <List size={20} />, label: "My Listings", active: false },
-        { icon: <Repeat size={20} />, label: "My Rentals", active: false },
+        {
+            icon: <List size={20} />,
+            label: "My Listings",
+            link: route("user.my-listings.index"),
+            active: url.startsWith("/user/listings"),
+        },
+        {
+            icon: <Repeat size={20} />,
+            label: "My Rentals",
+            link: route("user.my-rentals.index"),
+            active: url.startsWith("/user/rentals"),
+        },
+
         {
             icon: <CircleDollarSign size={20} />,
             label: "Earnings",
+            link: route("user.earnings.index"),
+            active: url.startsWith("/user/earnings"),
+        },
+        {
+            icon: <MessageSquare size={20} />,
+            label: "Message",
+            link: "#",
             active: false,
         },
-        { icon: <MessageSquare size={20} />, label: "Message", active: false },
-        { icon: <Star size={20} />, label: "Reviews", active: false },
-        { icon: <Settings size={20} />, label: "Settings", active: false },
+        {
+            icon: <Star size={20} />,
+            label: "Reviews",
+            link: "#",
+            active: false,
+        },
+        {
+            icon: <Settings size={20} />,
+            label: "Settings",
+            link: route("profile.edit"),
+            active: url === "/profile",
+        },
     ];
 
     return (
-        <aside className="w-64 bg-white min-h-screen border-r border-gray-100 flex flex-col py-6">
+        <aside className="w-64 bg-white h-screen sticky top-0 border-r border-gray-100 flex flex-col py-6 z-10">
+            {/* Logo Area */}
             <div className="px-8 mb-10 text-center">
-                <div className="flex flex-col items-center">
+                <Link href="/">
                     <img
-                        src="assets/images/logo.png"
+                        src="/assets/images/logo.png"
                         alt="Jardiloc"
                         className="w-60 mb-1"
                     />
-                </div>
+                </Link>
             </div>
 
-            <nav className="flex-1 px-2 space-y-2">
+            {/* Navigation Items */}
+            <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
                 {menuItems.map((item, idx) => (
-                    <div
+                    <Link
                         key={idx}
+                        href={item.link}
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all ${
                             item.active
                                 ? "bg-[#2D6A4F] text-white shadow-md shadow-green-900/10"
@@ -54,11 +88,11 @@ const Sidebar = () => {
                         <span className="font-semibold text-sm">
                             {item.label}
                         </span>
-                    </div>
+                    </Link>
                 ))}
             </nav>
         </aside>
     );
 };
 
-export default Sidebar; // This line fixes the error
+export default Sidebar;
