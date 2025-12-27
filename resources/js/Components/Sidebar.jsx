@@ -42,20 +42,20 @@ const Sidebar = () => {
         {
             icon: <MessageSquare size={20} />,
             label: "Message",
-            link: "#",
-            active: false,
+            link: route("user.message.index"),
+            active: url.startsWith("/user/message"),
         },
         {
             icon: <Star size={20} />,
             label: "Reviews",
-            link: "#",
-            active: false,
+            link: route("user.review.index"),
+            active: url.startsWith("/user/review"),
         },
         {
             icon: <Settings size={20} />,
             label: "Settings",
-            link: route("profile.edit"),
-            active: url === "/profile",
+            link: route("user.setting.index"),
+            active: url === "/user/setting",
         },
     ];
 
