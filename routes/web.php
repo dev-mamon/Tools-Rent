@@ -6,21 +6,16 @@ use App\Http\Controllers\Backend\User\MyListingController;
 use App\Http\Controllers\Backend\User\MyRentalController;
 use App\Http\Controllers\Backend\User\ReviewController;
 use App\Http\Controllers\Backend\User\SettingController;
+use App\Http\Controllers\Frontend\BrowseToolsController;
+use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/dashboard', function () {
+
     if (auth()->user()->is_admin === 'true') {
         return Inertia::render('Admin/Dashboard');
     }
@@ -34,13 +29,18 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+// frontend route
+Route::controller(BrowseToolsController::class)->group(function () {
+    Route::get('/browse-tools', 'browseTools')->name('browse-tools');
+    Route::get('/browse-tools/details/{slug}', 'browseToolsDetails')->name('browse-tools.details');
+});
 // listing in user side
 
-Route::controller(MyListingController::class)->prefix('user')->name('user.my-listings.')->group(function () {
-    Route::get('/listings', 'index')->name('index');
+Route::controller(MyListingController::class)->prefix('user/listings')->name('user.my-listings.')->group(function () {
+    Route::get('/', 'index')->name('index');
     Route::get('/create', 'create')->name('create');
     Route::get('/details', 'details')->name('details');
-    // Route::post('/', 'store')->name('store');
+    Route::post('/', 'store')->name('store');
     // Route::get('/{listing}', 'show')->name('show');
     // Route::get('/{listing}/edit', 'edit')->name('edit');
     // Route::put('/{listing}', 'update')->name('update');
