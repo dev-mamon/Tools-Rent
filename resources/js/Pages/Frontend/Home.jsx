@@ -12,7 +12,6 @@ export default function Home({ tools }) {
     return (
         <GuestLayout>
             <Head title="Home - Jardiloc Gardening Tools" />
-
             <Banner />
             <Category />
 

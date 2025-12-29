@@ -11,7 +11,7 @@ class HomeController extends Controller
     public function index()
     {
         return Inertia::render('Frontend/Home', [
-            'tools' => Tool::with(['images', 'user'])->where('status', 'pending')->latest()->get()->take(8),
+            'tools' => Tool::with(['images', 'user'])->where('status', 'active')->latest()->get()->take(8),
         ]);
     }
 }

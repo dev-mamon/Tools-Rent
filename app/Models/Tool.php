@@ -87,6 +87,16 @@ class Tool extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function specifications(): HasMany
+    {
+        return $this->hasMany(Specification::class);
+    }
+
+    public function guidelines(): HasMany
+    {
+        return $this->hasMany(Guideline::class);
+    }
+
     public function calculateEarning($price)
     {
         return $price * 0.92;

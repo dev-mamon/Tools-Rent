@@ -17,41 +17,34 @@ class MyListingController extends Controller
     public function index(Request $request)
     {
         $userId = auth()->id();
-
         $perPage = $request->input('per_page', 10);
 
         $tools = Tool::where('user_id', $userId)
-            ->with(['images'])
+            ->with(['images', 'specifications', 'guidelines'])
             ->latest()
             ->paginate((int) $perPage)
             ->withQueryString();
 
-        $totalCount = Tool::where('user_id', $userId)->count();
-        $activeRentals = Tool::where('user_id', $userId)->where('status', 'approved')->count();
-        $pendingApprovals = Tool::where('user_id', $userId)->where('status', 'pending')->count();
-
         return inertia('User/Listing/Index', [
             'tools' => $tools,
-            'totalCount' => $totalCount,
-            'activeRentals' => $activeRentals,
-            'pendingApprovals' => $pendingApprovals,
+            'totalCount' => Tool::where('user_id', $userId)->count(),
+            'activeRentals' => Tool::where('user_id', $userId)->where('status', 'approved')->count(),
+            'pendingApprovals' => Tool::where('user_id', $userId)->where('status', 'pending')->count(),
             'queryParams' => $request->query(),
         ]);
     }
 
-    // create
     public function create()
     {
         return Inertia::render('User/Listing/Create');
     }
 
-    // store
     public function store(StoreToolRequest $request)
     {
         try {
             DB::beginTransaction();
 
-            // ১. Tool Create
+            // 1. Tool Create
             $tool = Tool::create([
                 'user_id' => Auth::id(),
                 'name' => $request->name,
@@ -69,10 +62,18 @@ class MyListingController extends Controller
                 'status' => 'pending',
             ]);
 
-            // ২. Image handling
-            if ($request->hasFile('images')) {
-                foreach ($request->file('images') as $index => $image) {
+            // 2. Dynamic Relations
+            if (! empty($request->guidelines)) {
+                $tool->guidelines()->createMany($request->guidelines);
+            }
 
+            if (! empty($request->specifications)) {
+                $tool->specifications()->createMany($request->specifications);
+            }
+
+            // 3. Image handling
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
                     $path = $image->store('tools', 'public');
                     ToolImage::create([
                         'tool_id' => $tool->id,
@@ -86,19 +87,12 @@ class MyListingController extends Controller
 
             DB::commit();
 
-            return redirect()->route('user.my-listings.index')
-                ->with('success', 'Listing submitted for approval!');
+            return redirect()->route('user.my-listings.index')->with('success', 'Listing submitted for approval!');
 
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->withErrors(['error' => 'Database error: '.$e->getMessage()]);
+            return back()->withErrors(['error' => 'Error: '.$e->getMessage()]);
         }
-    }
-
-    // details
-    public function details()
-    {
-        return Inertia::render('User/Listing/Details');
     }
 }

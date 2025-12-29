@@ -8,7 +8,6 @@ import {
     Percent,
     ArrowLeft,
 } from "lucide-react";
-import { Link } from "@inertiajs/react";
 
 export default function DetailsListing() {
     // Mock data based on the provided images
@@ -204,7 +203,7 @@ export default function DetailsListing() {
                                 <Percent className="text-[#2D6A4F]" />
                             </div>
                             <h3 className="text-xl font-bold">
-                                Platform Comission
+                                Platform Commission
                             </h3>
                         </div>
                         <p className="text-4xl font-bold mb-6">

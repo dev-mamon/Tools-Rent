@@ -1,10 +1,8 @@
 import React from "react";
 import UserLayout from "@/Layouts/UserLayout";
 import Pagination from "@/Components/Pagination";
-// import { Link } from "@inertiajs/react";
 
 export default function MyRentals() {
-    // টেবিলের ডাটা
     const tableItems = [
         {
             name: "Gardening tools",

@@ -6,6 +6,7 @@ use App\Http\Controllers\Backend\User\MyListingController;
 use App\Http\Controllers\Backend\User\MyRentalController;
 use App\Http\Controllers\Backend\User\ReviewController;
 use App\Http\Controllers\Backend\User\SettingController;
+use App\Http\Controllers\Frontend\BookingController;
 use App\Http\Controllers\Frontend\BrowseToolsController;
 use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\ProfileController;
@@ -33,6 +34,13 @@ Route::middleware('auth')->group(function () {
 Route::controller(BrowseToolsController::class)->group(function () {
     Route::get('/browse-tools', 'browseTools')->name('browse-tools');
     Route::get('/browse-tools/details/{slug}', 'browseToolsDetails')->name('browse-tools.details');
+});
+
+// Booking Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/tools/{tool}/checkout', [BookingController::class, 'checkout'])->name('bookings.checkout');
+    Route::post('/tools/{tool}/bookings', [BookingController::class, 'store'])->name('bookings.store');
+    Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
 });
 // listing in user side
 
