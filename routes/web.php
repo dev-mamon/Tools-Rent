@@ -24,11 +24,11 @@ Route::get('/dashboard', function () {
     return Inertia::render('User/Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
+// Route::middleware('auth')->group(function () {
+//     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+//     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+//     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+// });
 
 // frontend route
 Route::controller(BrowseToolsController::class)->group(function () {
@@ -99,14 +99,10 @@ Route::controller(ReviewController::class)->prefix('user/review')->name('user.re
 });
 Route::controller(SettingController::class)->prefix('user/setting')->name('user.setting.')->group(function () {
     Route::get('/', 'index')->name('index');
-
-    // এডিট পেজ ভিউ করার রাউট (GET)
     Route::get('/edit-profile', 'editProfile')->name('edit-profile');
     Route::get('/edit-password', 'editPassword')->name('edit-password');
 
-    // // ডাটা আপডেট করার রাউট (POST)
-    // Route::post('/update-profile', 'updateProfile')->name('update-profile');
-    // Route::post('/update-password', 'updatePassword')->name('update-password');
+    Route::post('/update-profile', 'updateProfile')->name('update-profile');
+    Route::post('/update-password', 'updatePassword')->name('update-password');
 });
-
 require __DIR__.'/auth.php';

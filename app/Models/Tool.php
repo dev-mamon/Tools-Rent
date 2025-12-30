@@ -57,16 +57,15 @@ class Tool extends Model
         return $this->hasMany(ToolImage::class);
     }
 
-    // Accessor: tool.first_image_url return korbe
+    // Accessor: tool.first_image_url return
     public function getFirstImageUrlAttribute()
     {
         $image = $this->images()->first();
 
         if ($image) {
-            return $image->url; // ToolImage-er 'url' accessor ke call korche
+            return $image->url;
         }
 
-        // Kono image na thakle placeholder dekhabe
         return 'https://images.unsplash.com/photo-1592323860163-000c28340d04?q=80&w=600';
     }
 

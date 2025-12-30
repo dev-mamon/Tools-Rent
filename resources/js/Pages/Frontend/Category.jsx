@@ -53,9 +53,9 @@ export default function Category() {
     ];
 
     return (
-        <section className="py-20 bg-white">
+        <section className="py-20 bg-white dark:bg-gray-950 transition-colors duration-300">
             <div className="max-w-7xl mx-auto px-6">
-                <h2 className="text-4xl font-bold text-center text-[#10513D] mb-16">
+                <h2 className="text-4xl font-bold text-center text-[#10513D] dark:text-emerald-400 mb-16">
                     Browse by Categories
                 </h2>
 
@@ -63,23 +63,26 @@ export default function Category() {
                     {categories.map((cat) => (
                         <div
                             key={cat.id}
-                            className="bg-[#F8F9F8] p-10 rounded-[20px] flex flex-col items-center justify-center transition-all cursor-pointer hover:shadow-md group"
+                            className="bg-[#F8F9F8] dark:bg-gray-900 p-10 rounded-[20px] border border-transparent dark:border-gray-800 flex flex-col items-center justify-center transition-all cursor-pointer hover:shadow-md dark:hover:shadow-emerald-900/20 group"
                         >
                             <div className="mb-4">
-                                {/* SVG/Icon color filter to match #10513D */}
                                 <img
                                     src={cat.icon}
                                     alt={cat.name}
-                                    className="w-12 h-12 object-contain"
+                                    className="w-12 h-12 object-contain transition-all"
                                     style={{
-                                        filter: "invert(21%) sepia(26%) saturate(1451%) hue-rotate(117deg) brightness(91%) contrast(92%)",
+                                        filter: document.documentElement.classList.contains(
+                                            "dark"
+                                        )
+                                            ? "invert(64%) sepia(85%) saturate(365%) hue-rotate(106deg) brightness(101%) contrast(92%)"
+                                            : "invert(21%) sepia(26%) saturate(1451%) hue-rotate(117deg) brightness(91%) contrast(92%)",
                                     }}
                                 />
                             </div>
-                            <h3 className="font-bold text-gray-800 text-lg">
+                            <h3 className="font-bold text-gray-800 dark:text-gray-100 text-lg text-center">
                                 {cat.name}
                             </h3>
-                            <p className="text-sm text-gray-500 mt-1">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                                 {cat.count}
                             </p>
                         </div>

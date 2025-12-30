@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
+use App\Models\Booking;
 use App\Models\Tool;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -53,12 +54,18 @@ class BrowseToolsController extends Controller
 
     public function browseToolsDetails($slug)
     {
-        $tool = Tool::with(['images', 'user', 'category', 'specifications', 'guidelines'])
+        $tool = Tool::with(['images', 'user', 'specifications', 'guidelines'])
             ->where('slug', $slug)
             ->firstOrFail();
 
+        $existingBookings = Booking::where('tool_id', $tool->id)
+            ->whereIn('status', ['confirmed', 'in_progress'])
+            ->select('start_date', 'end_date', 'quantity')
+            ->get();
+
         return Inertia::render('Frontend/BrowseToolsDetails', [
             'tool' => $tool,
+            'existingBookings' => $existingBookings,
         ]);
     }
 }

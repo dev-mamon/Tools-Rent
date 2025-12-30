@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Star, ChevronDown, Filter, MapPin, Calendar, X } from "lucide-react";
 import GuestLayout from "@/Layouts/GuestLayout";
 import Navbar from "@/Components/Frontend/Navbar";
-
 import { Link, router, usePage, Head } from "@inertiajs/react";
 
 const BrowseTools = ({
@@ -11,7 +10,7 @@ const BrowseTools = ({
     filters = {},
     maxDatabasePrice,
 }) => {
-    // State Initialization with Optional Chaining and Dynamic Max
+    // State Initialization
     const [priceRange, setPriceRange] = useState(
         filters?.max_price || maxDatabasePrice
     );
@@ -110,16 +109,18 @@ const BrowseTools = ({
         <GuestLayout>
             <Head title="Browse Tools | Rent Your Tools Online" />
             <Navbar />
-            <div className="min-h-screen bg-gray-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                    {/* Stats & Sort */}
+
+            {/* মেইন কন্টেইনার - pt-32 দিয়ে টপ থেকে নিচে নামানো হয়েছে */}
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300 pt-32 pb-20">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    {/* Header Section */}
                     <div className="mb-10">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                             <div>
-                                <h1 className="text-3xl font-light text-gray-900">
+                                <h1 className="text-3xl font-light text-gray-900 dark:text-white">
                                     Premium Tools Collection
                                 </h1>
-                                <p className="text-gray-500 mt-2">
+                                <p className="text-gray-500 dark:text-gray-400 mt-2">
                                     {tools?.total || 0} tools available in your
                                     area
                                 </p>
@@ -128,27 +129,30 @@ const BrowseTools = ({
                             <div className="relative">
                                 <button
                                     onClick={() => setSortOpen(!sortOpen)}
-                                    className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg bg-white text-sm"
+                                    className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-900 text-sm text-gray-700 dark:text-gray-200"
                                 >
                                     <Filter size={16} /> Sort & Filter{" "}
                                     <ChevronDown
                                         size={16}
-                                        className={sortOpen ? "rotate-180" : ""}
+                                        className={`transition-transform ${
+                                            sortOpen ? "rotate-180" : ""
+                                        }`}
                                     />
                                 </button>
+
                                 {sortOpen && (
-                                    <div className="absolute right-0 mt-2 w-64 bg-white border rounded-lg shadow-lg z-50 py-2">
+                                    <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-lg shadow-xl z-50 py-2">
                                         {sortOptions.map((opt) => (
                                             <button
                                                 key={opt.value}
-                                                className={`w-full text-left px-4 py-2 text-sm ${
-                                                    selectedSort === opt.value
-                                                        ? "bg-gray-50 font-bold"
-                                                        : ""
-                                                }`}
                                                 onClick={() =>
                                                     handleSortSelect(opt.value)
                                                 }
+                                                className={`w-full text-left px-4 py-2 text-sm ${
+                                                    selectedSort === opt.value
+                                                        ? "bg-gray-50 dark:bg-gray-800 font-bold text-[#10513D] dark:text-emerald-400"
+                                                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                                                }`}
                                             >
                                                 {opt.label}
                                             </button>
@@ -158,13 +162,12 @@ const BrowseTools = ({
                             </div>
                         </div>
 
-                        {/* Clear Filters Button (shown only if filters exist) */}
                         {Object.keys(filters).length > 0 && (
                             <button
                                 onClick={clearAllFilters}
-                                className="text-sm text-red-600 hover:underline mb-4"
+                                className="text-sm text-red-600 dark:text-red-400 hover:underline mb-4 flex items-center gap-1"
                             >
-                                Clear All Filters
+                                <X size={14} /> Clear All Filters
                             </button>
                         )}
                     </div>
@@ -172,13 +175,10 @@ const BrowseTools = ({
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                         {/* Sidebar Filters */}
                         <aside className="lg:col-span-1 space-y-8">
-                            {/* DYNAMIC PRICE RANGE */}
-                            <div className="bg-white p-6 rounded-xl border border-gray-200">
-                                <h3 className="font-medium text-gray-900 mb-4">
-                                    Price Range{" "}
-                                    <span className="text-xs text-gray-400">
-                                        / day
-                                    </span>
+                            {/* Price Range */}
+                            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                                <h3 className="font-medium text-gray-900 dark:text-white mb-4">
+                                    Price Range
                                 </h3>
                                 <div className="space-y-4">
                                     <input
@@ -189,11 +189,11 @@ const BrowseTools = ({
                                         onChange={(e) =>
                                             handlePriceChange(e.target.value)
                                         }
-                                        className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-800"
+                                        className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-[#10513D] dark:accent-emerald-500"
                                     />
-                                    <div className="flex justify-between text-sm text-gray-600">
+                                    <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                                         <span>$0</span>
-                                        <span className="font-bold text-gray-900">
+                                        <span className="font-bold text-gray-900 dark:text-emerald-400">
                                             ${priceRange}
                                         </span>
                                         <span>${maxDatabasePrice}</span>
@@ -202,17 +202,17 @@ const BrowseTools = ({
                             </div>
 
                             {/* Categories */}
-                            <div className="bg-white p-6 rounded-xl border border-gray-200">
-                                <h3 className="font-medium text-gray-900 mb-4">
+                            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                                <h3 className="font-medium text-gray-900 dark:text-white mb-4">
                                     Categories
                                 </h3>
-                                <div className="space-y-3">
+                                <div className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                                     {staticCategories.map((cat, i) => (
                                         <label
                                             key={i}
                                             className="flex items-center justify-between cursor-pointer group"
                                         >
-                                            <span className="text-gray-700 text-sm">
+                                            <span className="text-gray-700 dark:text-gray-300 text-sm group-hover:text-emerald-600 transition-colors">
                                                 {cat}
                                             </span>
                                             <input
@@ -223,23 +223,23 @@ const BrowseTools = ({
                                                 onChange={() =>
                                                     handleCategoryToggle(cat)
                                                 }
-                                                className="w-4 h-4 rounded border-gray-300 text-gray-800 focus:ring-0"
+                                                className="w-4 h-4 rounded border-gray-300 dark:border-gray-700 text-[#10513D] dark:bg-gray-800 focus:ring-0"
                                             />
                                         </label>
                                     ))}
                                 </div>
                             </div>
 
-                            {/* Additional Filters */}
-                            <div className="bg-white p-6 rounded-xl border border-gray-200 space-y-4">
+                            {/* Other Filters */}
+                            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm space-y-6">
                                 <div>
-                                    <label className="block text-xs font-bold uppercase text-gray-400 mb-2">
+                                    <label className="block text-xs font-bold uppercase text-gray-400 dark:text-gray-500 mb-2">
                                         Delivery Type
                                     </label>
                                     <select
                                         value={deliveryType}
                                         onChange={handleDeliveryChange}
-                                        className="w-full border-gray-300 rounded-lg text-sm"
+                                        className="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-lg text-sm focus:ring-[#10513D]"
                                     >
                                         {deliveryOptions.map((opt) => (
                                             <option
@@ -252,7 +252,7 @@ const BrowseTools = ({
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold uppercase text-gray-400 mb-2">
+                                    <label className="block text-xs font-bold uppercase text-gray-400 dark:text-gray-500 mb-2">
                                         Availability Date
                                     </label>
                                     <input
@@ -264,174 +264,152 @@ const BrowseTools = ({
                                                 .toISOString()
                                                 .split("T")[0]
                                         }
-                                        className="w-full border-gray-300 rounded-lg text-sm"
+                                        className="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-lg text-sm focus:ring-[#10513D]"
                                     />
                                 </div>
                             </div>
                         </aside>
 
-                        {/* Main Tools Grid */}
+                        {/* Tools Grid */}
                         <main className="lg:col-span-3">
-                            {/* Stats */}
-                            <div className="mb-6 text-sm text-gray-600">
+                            <div className="mb-6 text-sm text-gray-600 dark:text-gray-400">
                                 Showing{" "}
-                                <span className="font-bold">
+                                <span className="font-bold text-gray-900 dark:text-white">
                                     {tools.from || 0}
                                 </span>{" "}
                                 to{" "}
-                                <span className="font-bold">
+                                <span className="font-bold text-gray-900 dark:text-white">
                                     {tools.to || 0}
                                 </span>{" "}
                                 of{" "}
-                                <span className="font-bold">{tools.total}</span>{" "}
+                                <span className="font-bold text-gray-900 dark:text-white">
+                                    {tools.total}
+                                </span>{" "}
                                 tools
                             </div>
 
-                            {/* Tools Grid */}
                             {tools.data.length > 0 ? (
-                                <>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                                        {tools.data.map((tool) => (
-                                            <div
-                                                key={tool.id}
-                                                className="bg-white rounded-[35px] border border-gray-100 p-3 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col h-full"
-                                            >
-                                                {/* Image Container */}
-                                                <div className="relative h-56 rounded-[28px] overflow-hidden">
-                                                    <img
-                                                        src={
-                                                            tool.first_image_url ||
-                                                            "https://images.unsplash.com/photo-1513467655676-561b7d489a88?q=80&w=500&auto=format&fit=crop"
-                                                        }
-                                                        alt={tool.name}
-                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                    />
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    {tools.data.map((tool) => (
+                                        <div
+                                            key={tool.id}
+                                            className="bg-white dark:bg-gray-900 rounded-[35px] border border-gray-100 dark:border-gray-800 p-3 shadow-sm hover:shadow-xl dark:hover:shadow-emerald-900/10 transition-all duration-300 group flex flex-col h-full"
+                                        >
+                                            <div className="relative h-56 rounded-[28px] overflow-hidden">
+                                                <img
+                                                    src={
+                                                        tool.first_image_url ||
+                                                        "https://images.unsplash.com/photo-1513467655676-561b7d489a88?q=80&w=500&auto=format&fit=crop"
+                                                    }
+                                                    alt={tool.name}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                />
+                                                {(parseFloat(
+                                                    tool.price_per_day
+                                                ) > 70 ||
+                                                    tool.featured) && (
+                                                    <div className="absolute top-3 right-3 bg-[#3D7A54] dark:bg-emerald-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-lg">
+                                                        🏅 Top Rated
+                                                    </div>
+                                                )}
+                                            </div>
 
-                                                    {/* Dynamic Badge */}
-                                                    {(parseFloat(
-                                                        tool.price_per_day
-                                                    ) > 70 ||
-                                                        tool.featured) && (
-                                                        <div className="absolute top-3 right-3 bg-[#3D7A54] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg">
-                                                            🏅 Top Rated
-                                                        </div>
-                                                    )}
+                                            <div className="px-3 py-5 flex flex-col flex-grow">
+                                                <h3 className="text-[20px] font-bold text-[#10513D] dark:text-emerald-400 mb-2 truncate">
+                                                    {tool.name}
+                                                </h3>
+
+                                                <div className="flex items-center gap-1 mb-1">
+                                                    <div className="flex items-center">
+                                                        {[...Array(5)].map(
+                                                            (_, i) => {
+                                                                const rating =
+                                                                    getToolRating(
+                                                                        tool
+                                                                    );
+                                                                return (
+                                                                    <Star
+                                                                        key={i}
+                                                                        size={
+                                                                            14
+                                                                        }
+                                                                        fill={
+                                                                            i <
+                                                                            Math.floor(
+                                                                                rating
+                                                                            )
+                                                                                ? "#FACC15"
+                                                                                : "none"
+                                                                        }
+                                                                        className={
+                                                                            i <
+                                                                            Math.floor(
+                                                                                rating
+                                                                            )
+                                                                                ? "text-yellow-400"
+                                                                                : "text-gray-300 dark:text-gray-600"
+                                                                        }
+                                                                    />
+                                                                );
+                                                            }
+                                                        )}
+                                                    </div>
+                                                    <span className="text-gray-400 dark:text-gray-500 text-[13px] ml-1">
+                                                        (
+                                                        {tool.reviews_count ||
+                                                            16}
+                                                        )
+                                                    </span>
                                                 </div>
 
-                                                <div className="px-3 py-5 flex flex-col flex-grow">
-                                                    {/* Title */}
-                                                    <h3 className="text-[20px] font-bold text-[#10513D] mb-2 truncate">
-                                                        {tool.name}
-                                                    </h3>
+                                                <p className="text-gray-400 dark:text-gray-500 text-[13px] mb-6 font-medium truncate flex items-center">
+                                                    <MapPin
+                                                        size={14}
+                                                        className="mr-1"
+                                                    />
+                                                    {tool.location_address ||
+                                                        "Jersey City, NJ"}
+                                                </p>
 
-                                                    {/* Rating Section */}
-                                                    <div className="flex items-center gap-1 mb-1">
-                                                        <div className="flex items-center">
-                                                            {[...Array(5)].map(
-                                                                (_, i) => {
-                                                                    const rating =
-                                                                        getToolRating(
-                                                                            tool
-                                                                        );
-                                                                    return (
-                                                                        <Star
-                                                                            key={
-                                                                                i
-                                                                            }
-                                                                            size={
-                                                                                16
-                                                                            }
-                                                                            fill={
-                                                                                i <
-                                                                                Math.floor(
-                                                                                    rating
-                                                                                )
-                                                                                    ? "#FACC15"
-                                                                                    : "none"
-                                                                            }
-                                                                            className={
-                                                                                i <
-                                                                                Math.floor(
-                                                                                    rating
-                                                                                )
-                                                                                    ? "text-yellow-400"
-                                                                                    : "text-gray-300"
-                                                                            }
-                                                                        />
-                                                                    );
-                                                                }
-                                                            )}
-                                                        </div>
-                                                        <span className="text-gray-400 text-[14px] ml-1 font-medium">
-                                                            (
-                                                            {tool.reviews_count ||
-                                                                16}
-                                                            )
+                                                <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-5 mt-auto">
+                                                    <div className="flex items-baseline gap-1">
+                                                        <span className="text-[22px] font-extrabold text-[#10513D] dark:text-white">
+                                                            $
+                                                            {parseFloat(
+                                                                tool.price_per_day
+                                                            ).toFixed(2)}
+                                                        </span>
+                                                        <span className="text-gray-500 dark:text-gray-400 text-[12px] font-bold uppercase tracking-wider">
+                                                            / Day
                                                         </span>
                                                     </div>
 
-                                                    {/* Location */}
-                                                    <p className="text-gray-400 text-[14px] mb-6 font-medium truncate">
-                                                        <MapPin
-                                                            size={14}
-                                                            className="inline mr-1 mb-1"
-                                                        />
-                                                        {tool.location_address ||
-                                                            "Jersey City, NJ"}
-                                                    </p>
-
-                                                    {/* Footer: Price and Button */}
-                                                    <div className="flex items-center justify-between border-t border-gray-100 pt-5 mt-auto">
-                                                        <div className="flex items-baseline gap-1">
-                                                            <span className="text-[22px] font-extrabold text-[#10513D]">
-                                                                $
-                                                                {parseFloat(
-                                                                    tool.price_per_day
-                                                                ).toFixed(2)}
-                                                            </span>
-                                                            <span className="text-[#10513D] text-[14px] font-bold">
-                                                                / Day
-                                                            </span>
-                                                        </div>
-
-                                                        <Link
-                                                            href={`/tools/${
-                                                                tool.slug ||
-                                                                tool.id
-                                                            }`}
-                                                            className="bg-[#3D7A54] hover:bg-[#10513D] text-white text-[13px] font-bold px-5 py-2.5 rounded-full flex items-center gap-2 transition-all"
-                                                        >
-                                                            Rent Now
-                                                            <span className="text-[16px]">
-                                                                →
-                                                            </span>
-                                                        </Link>
-                                                    </div>
+                                                    <Link
+                                                        href={`/tools/${
+                                                            tool.slug || tool.id
+                                                        }`}
+                                                        className="bg-[#3D7A54] dark:bg-emerald-600 hover:bg-[#10513D] dark:hover:bg-emerald-700 text-white text-[13px] font-bold px-5 py-2.5 rounded-full flex items-center gap-2 transition-all active:scale-95 shadow-md"
+                                                    >
+                                                        Rent Now
+                                                        <span>→</span>
+                                                    </Link>
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Pagination Section */}
-                                    {tools.links && tools.links.length > 3 && (
-                                        <div className="mt-12 flex justify-center">
-                                            {/* Add your Pagination component here, e.g.: <Pagination links={tools.links} /> */}
                                         </div>
-                                    )}
-                                </>
+                                    ))}
+                                </div>
                             ) : (
-                                /* Empty State */
-                                <div className="text-center py-20 bg-white rounded-[35px] border border-dashed border-gray-200">
-                                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                <div className="text-center py-20 bg-white dark:bg-gray-900 rounded-[35px] border border-dashed border-gray-200 dark:border-gray-800">
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                                         No tools found
                                     </h3>
-                                    <p className="text-gray-500">
+                                    <p className="text-gray-500 dark:text-gray-400">
                                         Try adjusting your filters to find more
                                         tools.
                                     </p>
                                     <button
                                         onClick={clearAllFilters}
-                                        className="mt-4 text-[#3D7A54] font-bold hover:underline"
+                                        className="mt-4 text-[#3D7A54] dark:text-emerald-400 font-bold hover:underline"
                                     >
                                         Clear all filters
                                     </button>

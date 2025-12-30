@@ -38,7 +38,7 @@ import {
 } from "date-fns";
 import { Head } from "@inertiajs/react";
 
-const BrowseToolsDetails = ({ tool }) => {
+const BrowseToolsDetails = ({ tool, existingBookings = [] }) => {
     // --- States ---
     const [selectedImage, setSelectedImage] = useState(0);
     const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -77,41 +77,13 @@ const BrowseToolsDetails = ({ tool }) => {
                 "Good quality tool, worked perfectly for my project. Delivery was prompt.",
             verified: true,
         },
-        {
-            id: 3,
-            user: { name: "Taylor Kim", avatar: null },
-            rating: 5,
-            date: "2024-03-05",
-            comment:
-                "Perfect tool for the job. Saved me from buying an expensive one-time-use tool.",
-            verified: false,
-        },
-        {
-            id: 4,
-            user: { name: "Casey Smith", avatar: null },
-            rating: 5,
-            date: "2024-02-28",
-            comment:
-                "Very professional service. The tool arrived clean and well-maintained.",
-            verified: true,
-        },
-        {
-            id: 5,
-            user: { name: "Riley Johnson", avatar: null },
-            rating: 4,
-            date: "2024-02-20",
-            comment: "Great experience overall. Would recommend this lender.",
-            verified: true,
-        },
     ];
 
-    // Parse available dates from backend
     const availableFrom = tool.available_from
         ? parseISO(tool.available_from)
         : null;
     const availableTo = tool.available_to ? parseISO(tool.available_to) : null;
 
-    // Calculate average rating
     const averageRating =
         reviews.length > 0
             ? (
@@ -120,7 +92,6 @@ const BrowseToolsDetails = ({ tool }) => {
               ).toFixed(1)
             : "0.0";
 
-    // Rating distribution
     const ratingDistribution = [5, 4, 3, 2, 1].map((star) => ({
         stars: star,
         count: reviews.filter((r) => r.rating === star).length,
@@ -129,7 +100,7 @@ const BrowseToolsDetails = ({ tool }) => {
                 100 || 0,
     }));
 
-    // --- Availability Check based on Selected Dates ---
+    // --- Availability Check ---
     const checkAvailabilityForSelectedDates = () => {
         if (!startDate || !endDate) {
             return {
@@ -138,8 +109,13 @@ const BrowseToolsDetails = ({ tool }) => {
                 type: "info",
             };
         }
-
-        // Check if dates are within available range
+        if (tool.status !== "active") {
+            return {
+                isAvailable: false,
+                message: "This listing is currently inactive",
+                type: "error",
+            };
+        }
         if (availableFrom && availableTo) {
             const isWithinAvailableRange =
                 isWithinInterval(startDate, {
@@ -150,7 +126,6 @@ const BrowseToolsDetails = ({ tool }) => {
                     start: availableFrom,
                     end: availableTo,
                 });
-
             if (!isWithinAvailableRange) {
                 return {
                     isAvailable: false,
@@ -162,46 +137,44 @@ const BrowseToolsDetails = ({ tool }) => {
                 };
             }
         }
-
-        // Check if start date is not in past
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        if (isBefore(startDate, today)) {
+        if (isBefore(startDate, today))
             return {
                 isAvailable: false,
                 message: "Start date cannot be in the past",
                 type: "error",
             };
-        }
-
-        // Check if end date is after start date
-        if (!isAfter(endDate, startDate)) {
+        if (!isAfter(endDate, startDate) && !isSameDay(endDate, startDate))
             return {
                 isAvailable: false,
-                message: "End date must be after start date",
+                message: "End date must be after or same as start date",
                 type: "error",
             };
-        }
 
-        // Check tool status
-        if (tool.status !== "active") {
-            return {
-                isAvailable: false,
-                message: "This listing is currently inactive",
-                type: "error",
-            };
+        const daysInRange = eachDayOfInterval({
+            start: startDate,
+            end: endDate,
+        });
+        for (const day of daysInRange) {
+            const bookedOnThisDay = existingBookings.reduce((sum, booking) => {
+                const bStart = parseISO(booking.start_date);
+                const bEnd = parseISO(booking.end_date);
+                if (isWithinInterval(day, { start: bStart, end: bEnd }))
+                    return sum + parseInt(booking.quantity);
+                return sum;
+            }, 0);
+            const remainingStock = tool.quantity - bookedOnThisDay;
+            if (remainingStock < quantity)
+                return {
+                    isAvailable: false,
+                    message: `Only ${remainingStock} items left for ${format(
+                        day,
+                        "MMM dd"
+                    )}`,
+                    type: "error",
+                };
         }
-
-        // Check if tool is available (general availability)
-        if (tool.is_available === false) {
-            return {
-                isAvailable: false,
-                message: "This tool is currently out of stock",
-                type: "error",
-            };
-        }
-
-        // All checks passed
         return {
             isAvailable: true,
             message: `Available for ${
@@ -213,79 +186,58 @@ const BrowseToolsDetails = ({ tool }) => {
 
     const availabilityStatus = checkAvailabilityForSelectedDates();
 
-    // --- Image Slider Logic ---
-    const nextImage = () => {
+    // --- Slider Logic ---
+    const nextImage = () =>
         setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-    };
-
-    const prevImage = () => {
+    const prevImage = () =>
         setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-    };
 
-    // Auto-slide every 5 seconds
     useEffect(() => {
         if (images.length <= 1 || !isAutoPlaying) return;
-        const interval = setInterval(() => {
-            nextImage();
-        }, 5000);
+        const interval = setInterval(nextImage, 5000);
         return () => clearInterval(interval);
     }, [selectedImage, images.length, isAutoPlaying]);
 
-    // --- Date Selection Logic ---
-    const handleDateClick = (day) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        // Prevent selecting past dates
-        if (isBefore(day, today)) return;
-
-        // Prevent selecting dates outside available range
-        if (availableFrom && availableTo) {
-            if (
-                !isWithinInterval(day, {
-                    start: availableFrom,
-                    end: availableTo,
-                })
-            ) {
-                return;
-            }
-        }
-
-        if (!startDate || (startDate && endDate)) {
-            setStartDate(day);
-            setEndDate(null);
-        } else if (isAfter(day, startDate)) {
-            setEndDate(day);
-        } else {
-            setStartDate(day);
-            setEndDate(null);
-        }
-    };
-
-    // Highlight unavailable dates on calendar
+    // --- Calendar Logic ---
     const isDateUnavailable = (day) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-
-        // Past dates are unavailable
         if (isBefore(day, today)) return true;
-
-        // Check if date is within available range
-        if (availableFrom && availableTo) {
-            return !isWithinInterval(day, {
-                start: availableFrom,
-                end: availableTo,
-            });
-        }
-
-        return false;
+        if (
+            availableFrom &&
+            availableTo &&
+            !isWithinInterval(day, { start: availableFrom, end: availableTo })
+        )
+            return true;
+        const totalBookedOnDay = existingBookings.reduce((sum, b) => {
+            if (
+                isWithinInterval(day, {
+                    start: parseISO(b.start_date),
+                    end: parseISO(b.end_date),
+                })
+            )
+                return sum + parseInt(b.quantity);
+            return sum;
+        }, 0);
+        return totalBookedOnDay >= tool.quantity;
     };
 
-    // --- Calculations ---
+    const handleDateClick = (day) => {
+        if (isDateUnavailable(day)) return;
+        if (!startDate || (startDate && endDate)) {
+            setStartDate(day);
+            setEndDate(null);
+        } else if (isAfter(day, startDate)) setEndDate(day);
+        else {
+            setStartDate(day);
+            setEndDate(null);
+        }
+    };
+
     const totalDays = useMemo(() => {
         if (!startDate || !endDate) return 1;
         const diff = differenceInDays(endDate, startDate);
-        return diff > 0 ? diff + 1 : 1; // Include both start and end days
+        return diff >= 0 ? diff + 1 : 1;
     }, [startDate, endDate]);
 
     const subTotal = pricePerDay * totalDays * quantity;
@@ -297,45 +249,39 @@ const BrowseToolsDetails = ({ tool }) => {
         return eachDayOfInterval({ start, end });
     }, [currentMonth]);
 
-    // Auto-select current month based on availability
     useEffect(() => {
-        if (availableFrom && isBefore(currentMonth, availableFrom)) {
+        if (availableFrom && isBefore(currentMonth, availableFrom))
             setCurrentMonth(availableFrom);
-        }
     }, [availableFrom]);
 
     return (
-        <GuestLayout className="bg-white">
+        <GuestLayout className="bg-white dark:bg-gray-950 transition-colors duration-300">
             <Head title={`Details - ${tool.name}`} />
             <Navbar />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20">
-                <nav className="flex items-center gap-2 text-sm text-gray-500 mb-8">
+                <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-8">
                     <span>Browse Tools</span>
                     <ChevronRight size={14} />
-                    <span className="font-semibold text-black">
+                    <span className="font-semibold text-black dark:text-gray-100">
                         Product details
                     </span>
                 </nav>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                    {/* LEFT SIDE: Image & Details */}
+                    {/* LEFT SIDE */}
                     <div className="lg:col-span-7">
                         <div className="space-y-6 mb-10">
-                            {/* Professional Image Slider with Auto-play */}
-                            <div className="relative rounded-2xl overflow-hidden bg-gray-100 group shadow-sm">
-                                {/* Top Rated Badge */}
+                            <div className="relative rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-900 group shadow-sm border dark:border-gray-800">
                                 <span className="absolute top-4 left-4 z-10 bg-gradient-to-r from-[#10513D] to-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-full flex items-center gap-1.5 shadow-lg">
                                     <Star size={12} fill="white" /> Top Rated
                                 </span>
-
-                                {/* Auto-play toggle */}
                                 {images.length > 1 && (
                                     <button
                                         onClick={() =>
                                             setIsAutoPlaying(!isAutoPlaying)
                                         }
-                                        className="absolute top-4 right-4 z-10 bg-black/70 text-white text-xs font-medium px-3 py-1.5 rounded-full backdrop-blur-sm flex items-center gap-1.5 hover:bg-black/80 transition-colors"
+                                        className="absolute top-4 right-4 z-10 bg-black/70 text-white text-xs font-medium px-3 py-1.5 rounded-full backdrop-blur-sm flex items-center gap-1.5 hover:bg-black/80"
                                     >
                                         {isAutoPlaying ? (
                                             <>
@@ -353,99 +299,71 @@ const BrowseToolsDetails = ({ tool }) => {
                                         )}
                                     </button>
                                 )}
-
-                                {/* Main Image */}
                                 <img
                                     src={images[selectedImage]}
                                     alt={tool.name}
                                     className="w-full aspect-[16/10] object-cover transition-all duration-500 ease-out"
                                 />
-
-                                {/* Navigation Arrows */}
                                 {images.length > 1 && (
                                     <>
                                         <button
                                             onClick={prevImage}
-                                            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100 z-10 active:scale-95"
-                                            aria-label="Previous image"
+                                            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-gray-800/90 hover:bg-white dark:hover:bg-gray-700 p-3 rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100 z-10"
                                         >
                                             <ChevronLeft
                                                 size={20}
-                                                className="text-gray-800"
+                                                className="text-gray-800 dark:text-gray-200"
                                             />
                                         </button>
                                         <button
                                             onClick={nextImage}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100 z-10 active:scale-95"
-                                            aria-label="Next image"
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-gray-800/90 hover:bg-white dark:hover:bg-gray-700 p-3 rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100 z-10"
                                         >
                                             <ChevronRight
                                                 size={20}
-                                                className="text-gray-800"
+                                                className="text-gray-800 dark:text-gray-200"
                                             />
                                         </button>
                                     </>
                                 )}
-
-                                {/* Image Counter */}
-                                {images.length > 1 && (
-                                    <div className="absolute bottom-4 right-4 bg-black/70 text-white text-xs font-medium px-3 py-1.5 rounded-full backdrop-blur-sm">
-                                        {selectedImage + 1} / {images.length}
-                                    </div>
-                                )}
                             </div>
-
-                            {/* Thumbnail Slider with Previous Design */}
+                            {/* Thumbnail Slider */}
                             {images.length > 1 && (
                                 <div className="relative group/thumb">
                                     <div className="flex items-center gap-3">
                                         <button
                                             onClick={prevImage}
-                                            className="text-gray-400 hover:text-black transition-colors p-2 rounded-lg hover:bg-gray-100"
-                                            aria-label="Previous thumbnails"
+                                            className="text-gray-400 hover:text-black dark:hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                                         >
                                             <Play
                                                 size={16}
                                                 className="rotate-180 fill-current"
                                             />
                                         </button>
-
-                                        <div className="flex-1 flex gap-3 overflow-x-auto pb-4 pt-1 px-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                                        <div className="flex-1 flex gap-3 overflow-x-auto pb-4 pt-1 px-1 scrollbar-thin dark:scrollbar-thumb-gray-700">
                                             {images.map((img, idx) => (
                                                 <button
                                                     key={idx}
                                                     onClick={() =>
                                                         setSelectedImage(idx)
                                                     }
-                                                    className={`relative flex-shrink-0 rounded-xl overflow-hidden w-28 h-20 transition-all duration-300 border-2
-                                                        ${
-                                                            selectedImage ===
-                                                            idx
-                                                                ? "border-[#10513D] scale-105 ring-2 ring-[#10513D]/20"
-                                                                : "border-gray-200 opacity-75 hover:opacity-100 hover:border-gray-300"
-                                                        }`}
-                                                    aria-label={`View image ${
-                                                        idx + 1
+                                                    className={`relative flex-shrink-0 rounded-xl overflow-hidden w-28 h-20 transition-all border-2 ${
+                                                        selectedImage === idx
+                                                            ? "border-[#10513D] scale-105 ring-2 ring-[#10513D]/20"
+                                                            : "border-gray-200 dark:border-gray-800 opacity-75 hover:opacity-100"
                                                     }`}
                                                 >
                                                     <img
                                                         src={img}
                                                         className="w-full h-full object-cover"
-                                                        alt={`${
-                                                            tool.name
-                                                        } view ${idx + 1}`}
+                                                        alt="view"
                                                     />
-                                                    {selectedImage === idx && (
-                                                        <div className="absolute inset-0 bg-[#10513D]/10 pointer-events-none" />
-                                                    )}
                                                 </button>
                                             ))}
                                         </div>
-
                                         <button
                                             onClick={nextImage}
-                                            className="text-gray-400 hover:text-black transition-colors p-2 rounded-lg hover:bg-gray-100"
-                                            aria-label="Next thumbnails"
+                                            className="text-gray-400 hover:text-black dark:hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                                         >
                                             <Play
                                                 size={16}
@@ -453,47 +371,17 @@ const BrowseToolsDetails = ({ tool }) => {
                                             />
                                         </button>
                                     </div>
-
-                                    {/* Custom Scrollbar Indicator */}
-                                    <div className="absolute bottom-0 left-10 right-10 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-gray-400 transition-all duration-300 rounded-full"
-                                            style={{
-                                                width: `${
-                                                    100 / images.length
-                                                }%`,
-                                                marginLeft: `${
-                                                    (100 / images.length) *
-                                                    selectedImage
-                                                }%`,
-                                            }}
-                                        />
-                                    </div>
                                 </div>
                             )}
                         </div>
 
                         {/* Calendar & Selection */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 border-t pt-10">
-                            {/* Calendar Section */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 border-t dark:border-gray-800 pt-10">
                             <div>
                                 <div className="flex items-center justify-between mb-6">
-                                    <div>
-                                        <h3 className="font-bold text-gray-800 text-lg">
-                                            {format(currentMonth, "MMMM yyyy")}
-                                        </h3>
-                                        {availableFrom && availableTo && (
-                                            <p className="text-sm text-gray-500 mt-1">
-                                                Available:{" "}
-                                                {format(
-                                                    availableFrom,
-                                                    "MMM dd"
-                                                )}{" "}
-                                                -{" "}
-                                                {format(availableTo, "MMM dd")}
-                                            </p>
-                                        )}
-                                    </div>
+                                    <h3 className="font-bold text-gray-800 dark:text-gray-100 text-lg">
+                                        {format(currentMonth, "MMMM yyyy")}
+                                    </h3>
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() =>
@@ -501,8 +389,7 @@ const BrowseToolsDetails = ({ tool }) => {
                                                     subMonths(currentMonth, 1)
                                                 )
                                             }
-                                            className="p-2 border rounded-lg hover:bg-gray-50 transition-colors active:scale-95"
-                                            aria-label="Previous month"
+                                            className="p-2 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-gray-300"
                                         >
                                             <ChevronLeft size={16} />
                                         </button>
@@ -512,16 +399,13 @@ const BrowseToolsDetails = ({ tool }) => {
                                                     addMonths(currentMonth, 1)
                                                 )
                                             }
-                                            className="p-2 border rounded-lg hover:bg-gray-50 transition-colors active:scale-95"
-                                            aria-label="Next month"
+                                            className="p-2 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-gray-300"
                                         >
                                             <ChevronRight size={16} />
                                         </button>
                                     </div>
                                 </div>
-
-                                {/* Weekday Headers */}
-                                <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-500 font-medium mb-3">
+                                <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-500 font-medium mb-3 uppercase">
                                     {[
                                         "Sun",
                                         "Mon",
@@ -536,8 +420,6 @@ const BrowseToolsDetails = ({ tool }) => {
                                         </div>
                                     ))}
                                 </div>
-
-                                {/* Calendar Days */}
                                 <div className="grid grid-cols-7 gap-1">
                                     {calendarDays.map((day, i) => {
                                         const isSelected =
@@ -550,111 +432,133 @@ const BrowseToolsDetails = ({ tool }) => {
                                             endDate &&
                                             isAfter(day, startDate) &&
                                             isBefore(day, endDate);
-                                        const isToday = isSameDay(
-                                            day,
-                                            new Date()
-                                        );
-                                        const isUnavailable =
-                                            isDateUnavailable(day);
                                         const isCurrentMonth = isSameMonth(
                                             day,
                                             currentMonth
+                                        );
+                                        const isUnavailable =
+                                            isDateUnavailable(day);
+                                        const totalBookedOnDay =
+                                            existingBookings.reduce(
+                                                (sum, b) => {
+                                                    if (
+                                                        isWithinInterval(day, {
+                                                            start: parseISO(
+                                                                b.start_date
+                                                            ),
+                                                            end: parseISO(
+                                                                b.end_date
+                                                            ),
+                                                        })
+                                                    )
+                                                        return (
+                                                            sum +
+                                                            parseInt(b.quantity)
+                                                        );
+                                                    return sum;
+                                                },
+                                                0
+                                            );
+                                        const isPartiallyBooked =
+                                            isCurrentMonth &&
+                                            !isUnavailable &&
+                                            totalBookedOnDay > 0 &&
+                                            totalBookedOnDay < tool.quantity;
+                                        const isFullyAvailable =
+                                            isCurrentMonth &&
+                                            !isUnavailable &&
+                                            totalBookedOnDay === 0;
+                                        const isToday = isSameDay(
+                                            day,
+                                            new Date()
                                         );
 
                                         return (
                                             <button
                                                 key={i}
+                                                disabled={
+                                                    !isCurrentMonth ||
+                                                    isUnavailable
+                                                }
                                                 onClick={() =>
-                                                    !isUnavailable &&
                                                     handleDateClick(day)
                                                 }
-                                                disabled={isUnavailable}
-                                                className={`p-2.5 text-sm font-medium rounded-lg transition-all duration-200 relative
+                                                className={`p-2.5 text-sm font-medium rounded-lg transition-all relative
                                                     ${
                                                         !isCurrentMonth
-                                                            ? "text-gray-300 pointer-events-none"
+                                                            ? "text-gray-300 dark:text-gray-700 pointer-events-none bg-transparent"
+                                                            : "dark:text-gray-300"
+                                                    }
+                                                    ${
+                                                        isToday && !isSelected
+                                                            ? "border-2 border-blue-500"
                                                             : ""
                                                     }
                                                     ${
-                                                        isUnavailable
-                                                            ? "text-gray-300 cursor-not-allowed bg-gray-50"
-                                                            : "hover:bg-gray-50"
-                                                    }
-                                                    ${
                                                         isSelected
-                                                            ? "bg-[#10513D] text-white font-semibold z-10"
+                                                            ? "bg-[#10513D] text-white font-semibold z-10 shadow-lg"
                                                             : ""
                                                     }
                                                     ${
                                                         isInRange
-                                                            ? "bg-emerald-50 text-[#10513D]"
+                                                            ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300"
                                                             : ""
                                                     }
                                                     ${
-                                                        isToday && !isSelected
-                                                            ? "border-2 border-[#10513D]"
+                                                        isUnavailable &&
+                                                        isCurrentMonth
+                                                            ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
                                                             : ""
                                                     }
                                                     ${
-                                                        isCurrentMonth &&
+                                                        isPartiallyBooked &&
                                                         !isSelected &&
-                                                        !isInRange &&
-                                                        !isUnavailable
-                                                            ? "text-gray-700"
+                                                        !isInRange
+                                                            ? "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-900/50"
+                                                            : ""
+                                                    }
+                                                    ${
+                                                        isFullyAvailable &&
+                                                        !isSelected &&
+                                                        !isInRange
+                                                            ? "bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
                                                             : ""
                                                     }
                                                 `}
-                                                aria-label={`${format(
-                                                    day,
-                                                    "MMMM d, yyyy"
-                                                )} ${
-                                                    isUnavailable
-                                                        ? " (Unavailable)"
-                                                        : ""
-                                                }`}
                                             >
                                                 {format(day, "d")}
+                                                {isPartiallyBooked && (
+                                                    <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                                                )}
                                                 {isUnavailable &&
-                                                    isCurrentMonth && (
-                                                        <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-gray-300 rounded-full" />
+                                                    isCurrentMonth &&
+                                                    !isBefore(
+                                                        day,
+                                                        new Date()
+                                                    ) && (
+                                                        <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-red-500" />
                                                     )}
+                                                {isFullyAvailable && (
+                                                    <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-green-500" />
+                                                )}
                                             </button>
                                         );
                                     })}
                                 </div>
-
-                                {/* Calendar Legend */}
-                                <div className="flex items-center gap-4 mt-4 pt-4 border-t text-xs text-gray-500">
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-3 h-3 rounded bg-[#10513D]" />
-                                        <span>Selected</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-3 h-3 rounded bg-emerald-50" />
-                                        <span>In Range</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-3 h-3 rounded bg-gray-100" />
-                                        <span>Unavailable</span>
-                                    </div>
-                                </div>
                             </div>
 
-                            {/* Rental Summary with Availability Status */}
                             <div className="space-y-6">
-                                <h3 className="font-bold text-gray-800 text-lg">
+                                <h3 className="font-bold text-gray-800 dark:text-gray-100 text-lg">
                                     Rental Summary
                                 </h3>
-
-                                {/* Availability Status Banner */}
                                 <div
                                     className={`p-4 rounded-xl border ${
                                         availabilityStatus.type === "success"
-                                            ? "bg-emerald-50 border-emerald-200"
+                                            ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800"
                                             : availabilityStatus.type ===
                                               "error"
-                                            ? "bg-red-50 border-red-200"
-                                            : "bg-blue-50 border-blue-200"
+                                            ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50"
+                                            : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-900/50"
                                     }`}
                                 >
                                     <div className="flex items-start gap-3">
@@ -684,11 +588,11 @@ const BrowseToolsDetails = ({ tool }) => {
                                                 className={`font-semibold ${
                                                     availabilityStatus.type ===
                                                     "success"
-                                                        ? "text-emerald-700"
+                                                        ? "text-emerald-700 dark:text-emerald-400"
                                                         : availabilityStatus.type ===
                                                           "error"
-                                                        ? "text-red-700"
-                                                        : "text-blue-700"
+                                                        ? "text-red-700 dark:text-red-400"
+                                                        : "text-blue-700 dark:text-blue-400"
                                                 }`}
                                             >
                                                 {availabilityStatus.type ===
@@ -699,25 +603,24 @@ const BrowseToolsDetails = ({ tool }) => {
                                                     ? "Not Available"
                                                     : "Select Dates"}
                                             </p>
-                                            <p className="text-sm text-gray-600 mt-0.5">
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
                                                 {availabilityStatus.message}
                                             </p>
                                         </div>
                                     </div>
                                 </div>
-
                                 <div className="space-y-4">
                                     <div className="flex gap-3">
-                                        <div className="flex-1 p-4 border rounded-xl bg-gray-50/50">
-                                            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">
+                                        <div className="flex-1 p-4 border dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-gray-900/50">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase mb-1">
                                                 Start Date
                                             </p>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 text-gray-800 dark:text-gray-200">
                                                 <Calendar
                                                     size={14}
                                                     className="text-gray-400"
                                                 />
-                                                <p className="text-sm font-semibold text-gray-800">
+                                                <p className="text-sm font-semibold">
                                                     {startDate
                                                         ? format(
                                                               startDate,
@@ -727,16 +630,16 @@ const BrowseToolsDetails = ({ tool }) => {
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="flex-1 p-4 border rounded-xl bg-gray-50/50">
-                                            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">
+                                        <div className="flex-1 p-4 border dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-gray-900/50">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase mb-1">
                                                 End Date
                                             </p>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 text-gray-800 dark:text-gray-200">
                                                 <Calendar
                                                     size={14}
                                                     className="text-gray-400"
                                                 />
-                                                <p className="text-sm font-semibold text-gray-800">
+                                                <p className="text-sm font-semibold">
                                                     {endDate
                                                         ? format(
                                                               endDate,
@@ -747,34 +650,27 @@ const BrowseToolsDetails = ({ tool }) => {
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* Pricing Breakdown */}
-                                    <div className="space-y-4 border-t pt-4">
-                                        <div className="flex justify-between items-center text-gray-600">
-                                            <span className="text-sm">
+                                    <div className="space-y-4 border-t dark:border-gray-800 pt-4">
+                                        <div className="flex justify-between items-center text-gray-600 dark:text-gray-400 text-sm">
+                                            <span>
                                                 ${pricePerDay.toFixed(2)} ×{" "}
                                                 {totalDays} Days
                                             </span>
-                                            <span className="font-semibold text-gray-800">
+                                            <span className="font-semibold text-gray-800 dark:text-gray-100">
                                                 ${subTotal.toFixed(2)}
                                             </span>
                                         </div>
-
-                                        <div className="flex justify-between items-center text-gray-600">
-                                            <span className="text-sm">
-                                                Booking Fee
-                                            </span>
-                                            <span className="font-semibold text-gray-800">
+                                        <div className="flex justify-between items-center text-gray-600 dark:text-gray-400 text-sm">
+                                            <span>Booking Fee</span>
+                                            <span className="font-semibold text-gray-800 dark:text-gray-100">
                                                 ${bookingFee.toFixed(2)}
                                             </span>
                                         </div>
-
-                                        {/* Quantity Selector */}
                                         <div className="flex justify-between items-center py-3">
-                                            <span className="text-gray-600 text-sm">
+                                            <span className="text-gray-600 dark:text-gray-400 text-sm">
                                                 Qty
                                             </span>
-                                            <div className="flex items-center gap-4 border rounded-lg px-3 py-1.5 bg-white">
+                                            <div className="flex items-center gap-4 border dark:border-gray-700 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800">
                                                 <button
                                                     onClick={() =>
                                                         setQuantity(
@@ -784,12 +680,11 @@ const BrowseToolsDetails = ({ tool }) => {
                                                             )
                                                         )
                                                     }
-                                                    className="p-1 text-gray-500 hover:text-gray-700 transition-colors"
-                                                    aria-label="Decrease quantity"
+                                                    className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                                                 >
                                                     <Minus size={14} />
                                                 </button>
-                                                <span className="font-bold text-gray-800 min-w-[24px] text-center">
+                                                <span className="font-bold text-gray-800 dark:text-gray-100 min-w-[24px] text-center">
                                                     {quantity}
                                                 </span>
                                                 <button
@@ -798,16 +693,13 @@ const BrowseToolsDetails = ({ tool }) => {
                                                             quantity + 1
                                                         )
                                                     }
-                                                    className="p-1 text-gray-500 hover:text-gray-700 transition-colors"
-                                                    aria-label="Increase quantity"
+                                                    className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                                                 >
                                                     <Plus size={14} />
                                                 </button>
                                             </div>
                                         </div>
-
-                                        {/* Total */}
-                                        <div className="flex justify-between items-center font-bold text-xl text-black border-t pt-4">
+                                        <div className="flex justify-between items-center font-bold text-xl text-black dark:text-white border-t dark:border-gray-800 pt-4">
                                             <span>Total</span>
                                             <span>
                                                 ${totalAmount.toFixed(2)}
@@ -818,83 +710,52 @@ const BrowseToolsDetails = ({ tool }) => {
                             </div>
                         </div>
 
-                        {/* Tabs for Specifications, Guidelines and Reviews */}
-                        <div className="border-t pt-10">
-                            <div className="flex border-b mb-8 overflow-x-auto">
-                                <button
-                                    onClick={() => setActiveTab("about")}
-                                    className={`pb-4 px-6 font-medium text-sm transition-colors relative whitespace-nowrap ${
-                                        activeTab === "about"
-                                            ? "text-[#10513D] font-semibold"
-                                            : "text-gray-500 hover:text-gray-700"
-                                    }`}
-                                >
-                                    About This Tool
-                                    {activeTab === "about" && (
-                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#10513D]" />
-                                    )}
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab("specs")}
-                                    className={`pb-4 px-6 font-medium text-sm transition-colors relative whitespace-nowrap ${
-                                        activeTab === "specs"
-                                            ? "text-[#10513D] font-semibold"
-                                            : "text-gray-500 hover:text-gray-700"
-                                    }`}
-                                >
-                                    Specifications
-                                    {activeTab === "specs" && (
-                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#10513D]" />
-                                    )}
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab("guidelines")}
-                                    className={`pb-4 px-6 font-medium text-sm transition-colors relative whitespace-nowrap ${
-                                        activeTab === "guidelines"
-                                            ? "text-[#10513D] font-semibold"
-                                            : "text-gray-500 hover:text-gray-700"
-                                    }`}
-                                >
-                                    Safety Guidelines
-                                    {activeTab === "guidelines" && (
-                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#10513D]" />
-                                    )}
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab("reviews")}
-                                    className={`pb-4 px-6 font-medium text-sm transition-colors relative whitespace-nowrap ${
-                                        activeTab === "reviews"
-                                            ? "text-[#10513D] font-semibold"
-                                            : "text-gray-500 hover:text-gray-700"
-                                    }`}
-                                >
-                                    Reviews & Ratings ({reviews.length})
-                                    {activeTab === "reviews" && (
-                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#10513D]" />
-                                    )}
-                                </button>
+                        {/* Tabs (About, Specs, Guidelines, Reviews) */}
+                        <div className="border-t dark:border-gray-800 pt-10">
+                            <div className="flex border-b dark:border-gray-800 mb-8 overflow-x-auto">
+                                {[
+                                    "about",
+                                    "specs",
+                                    "guidelines",
+                                    "reviews",
+                                ].map((t) => (
+                                    <button
+                                        key={t}
+                                        onClick={() => setActiveTab(t)}
+                                        className={`pb-4 px-6 font-medium text-sm transition-colors relative whitespace-nowrap capitalize ${
+                                            activeTab === t
+                                                ? "text-[#10513D] dark:text-emerald-400 font-semibold"
+                                                : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                                        }`}
+                                    >
+                                        {t === "about"
+                                            ? "About This Tool"
+                                            : t === "specs"
+                                            ? "Specifications"
+                                            : t === "guidelines"
+                                            ? "Safety Guidelines"
+                                            : `Reviews (${reviews.length})`}
+                                        {activeTab === t && (
+                                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#10513D] dark:bg-emerald-400" />
+                                        )}
+                                    </button>
+                                ))}
                             </div>
-
-                            {/* About Tab */}
-                            {activeTab === "about" && (
-                                <div className="space-y-8">
+                            <div className="dark:text-gray-300">
+                                {activeTab === "about" && (
                                     <div>
-                                        <h2 className="text-2xl font-bold mb-4">
+                                        <h2 className="text-2xl font-bold mb-4 dark:text-white">
                                             About this tool
                                         </h2>
-                                        <p className="text-gray-600 leading-relaxed mb-8">
+                                        <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-8">
                                             {tool.description ||
                                                 "No description available."}
                                         </p>
                                     </div>
-                                </div>
-                            )}
-
-                            {/* Specifications Tab */}
-                            {activeTab === "specs" && (
-                                <div className="space-y-8">
+                                )}
+                                {activeTab === "specs" && (
                                     <div>
-                                        <h3 className="text-lg font-bold mb-5">
+                                        <h3 className="text-lg font-bold mb-5 dark:text-white">
                                             Specifications
                                         </h3>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8">
@@ -902,7 +763,7 @@ const BrowseToolsDetails = ({ tool }) => {
                                                 (spec, index) => (
                                                     <div
                                                         key={index}
-                                                        className="flex items-center gap-3 text-[15px] text-gray-800"
+                                                        className="flex items-center gap-3 text-[15px] text-gray-800 dark:text-gray-200"
                                                     >
                                                         <div className="bg-green-600 rounded-full p-0.5">
                                                             <CheckCircle2
@@ -920,14 +781,10 @@ const BrowseToolsDetails = ({ tool }) => {
                                             )}
                                         </div>
                                     </div>
-                                </div>
-                            )}
-
-                            {/* Safety Guidelines Tab */}
-                            {activeTab === "guidelines" && (
-                                <div className="space-y-8">
+                                )}
+                                {activeTab === "guidelines" && (
                                     <div>
-                                        <h3 className="text-lg font-bold mb-5">
+                                        <h3 className="text-lg font-bold mb-5 dark:text-white">
                                             Safety Guidelines
                                         </h3>
                                         <div className="space-y-4">
@@ -935,7 +792,7 @@ const BrowseToolsDetails = ({ tool }) => {
                                                 (guide, index) => (
                                                     <div
                                                         key={index}
-                                                        className="flex items-center gap-3 text-[15px] text-gray-700"
+                                                        className="flex items-center gap-3 text-[15px] text-gray-700 dark:text-gray-300"
                                                     >
                                                         <div className="w-2.5 h-2.5 rounded-full bg-[#3d8c71]" />
                                                         <span>
@@ -951,96 +808,83 @@ const BrowseToolsDetails = ({ tool }) => {
                                             )}
                                         </div>
                                     </div>
-                                </div>
-                            )}
-
-                            {/* Reviews Tab */}
-                            {activeTab === "reviews" && (
-                                <div className="space-y-8">
-                                    {/* Rating Overview */}
-                                    <div className="bg-gray-50 rounded-2xl p-6">
-                                        <div className="flex flex-col md:flex-row items-center gap-8">
-                                            {/* Average Rating */}
-                                            <div className="text-center md:text-left">
-                                                <div className="text-5xl font-bold text-gray-900 mb-2">
-                                                    {averageRating}
+                                )}
+                                {activeTab === "reviews" && (
+                                    <div className="space-y-8">
+                                        <div className="bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-6">
+                                            <div className="flex flex-col md:flex-row items-center gap-8">
+                                                <div className="text-center md:text-left">
+                                                    <div className="text-5xl font-bold text-gray-900 dark:text-white mb-2">
+                                                        {averageRating}
+                                                    </div>
+                                                    <div className="flex justify-center md:justify-start gap-1 mb-2">
+                                                        {[1, 2, 3, 4, 5].map(
+                                                            (star) => (
+                                                                <Star
+                                                                    key={star}
+                                                                    size={20}
+                                                                    className={`${
+                                                                        star <=
+                                                                        Math.floor(
+                                                                            averageRating
+                                                                        )
+                                                                            ? "text-yellow-400 fill-yellow-400"
+                                                                            : "text-gray-300 dark:text-gray-700"
+                                                                    }`}
+                                                                />
+                                                            )
+                                                        )}
+                                                        <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                                            Based on{" "}
+                                                            {reviews.length}{" "}
+                                                            reviews
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div className="flex justify-center md:justify-start gap-1 mb-2">
-                                                    {[1, 2, 3, 4, 5].map(
-                                                        (star) => (
-                                                            <Star
-                                                                key={star}
-                                                                size={20}
-                                                                className={`${
-                                                                    star <=
-                                                                    Math.floor(
-                                                                        averageRating
-                                                                    )
-                                                                        ? "text-yellow-400 fill-yellow-400"
-                                                                        : "text-gray-300"
-                                                                }`}
-                                                            />
+                                                <div className="flex-1 space-y-3 min-w-0">
+                                                    {ratingDistribution.map(
+                                                        (item) => (
+                                                            <div
+                                                                key={item.stars}
+                                                                className="flex items-center gap-3"
+                                                            >
+                                                                <div className="flex items-center gap-2 w-20">
+                                                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                                        {
+                                                                            item.stars
+                                                                        }{" "}
+                                                                        star
+                                                                        {item.stars !==
+                                                                        1
+                                                                            ? "s"
+                                                                            : ""}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                                                                    <div
+                                                                        className="h-full bg-yellow-400"
+                                                                        style={{
+                                                                            width: `${item.percentage}%`,
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                                <span className="text-sm text-gray-600 dark:text-gray-400 w-10 text-right">
+                                                                    {item.count}
+                                                                </span>
+                                                            </div>
                                                         )
                                                     )}
                                                 </div>
-                                                <p className="text-gray-600 text-sm">
-                                                    Based on {reviews.length}{" "}
-                                                    {reviews.length === 1
-                                                        ? "review"
-                                                        : "reviews"}
-                                                </p>
-                                            </div>
-
-                                            {/* Rating Distribution */}
-                                            <div className="flex-1 space-y-3 min-w-0">
-                                                {ratingDistribution.map(
-                                                    (item) => (
-                                                        <div
-                                                            key={item.stars}
-                                                            className="flex items-center gap-3"
-                                                        >
-                                                            <div className="flex items-center gap-2 w-20">
-                                                                <span className="text-sm font-medium text-gray-700">
-                                                                    {item.stars}{" "}
-                                                                    star
-                                                                    {item.stars !==
-                                                                    1
-                                                                        ? "s"
-                                                                        : ""}
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden min-w-[100px]">
-                                                                <div
-                                                                    className="h-full bg-yellow-400 rounded-full"
-                                                                    style={{
-                                                                        width: `${item.percentage}%`,
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <span className="text-sm text-gray-600 w-10 text-right">
-                                                                {item.count}
-                                                            </span>
-                                                        </div>
-                                                    )
-                                                )}
                                             </div>
                                         </div>
-                                    </div>
-
-                                    {/* Reviews List */}
-                                    <div className="space-y-6">
-                                        <h3 className="text-lg font-semibold text-gray-900">
-                                            Customer Reviews
-                                        </h3>
-
                                         {reviews.map((review) => (
                                             <div
                                                 key={review.id}
-                                                className="border-b pb-6 last:border-0"
+                                                className="border-b dark:border-gray-800 pb-6 last:border-0"
                                             >
                                                 <div className="flex items-start justify-between mb-3">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                                                        <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                                                             {review.user
                                                                 .avatar ? (
                                                                 <img
@@ -1048,11 +892,6 @@ const BrowseToolsDetails = ({ tool }) => {
                                                                         review
                                                                             .user
                                                                             .avatar
-                                                                    }
-                                                                    alt={
-                                                                        review
-                                                                            .user
-                                                                            .name
                                                                     }
                                                                     className="w-full h-full rounded-full object-cover"
                                                                 />
@@ -1065,7 +904,7 @@ const BrowseToolsDetails = ({ tool }) => {
                                                         </div>
                                                         <div>
                                                             <div className="flex items-center gap-2">
-                                                                <p className="font-medium text-gray-900">
+                                                                <p className="font-medium text-gray-900 dark:text-white">
                                                                     {
                                                                         review
                                                                             .user
@@ -1073,12 +912,12 @@ const BrowseToolsDetails = ({ tool }) => {
                                                                     }
                                                                 </p>
                                                                 {review.verified && (
-                                                                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                                                    <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full">
                                                                         Verified
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                                                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                                                                 <div className="flex gap-0.5">
                                                                     {[
                                                                         1, 2, 3,
@@ -1098,7 +937,7 @@ const BrowseToolsDetails = ({ tool }) => {
                                                                                     star <=
                                                                                     review.rating
                                                                                         ? "text-yellow-400 fill-yellow-400"
-                                                                                        : "text-gray-300"
+                                                                                        : "text-gray-300 dark:text-gray-700"
                                                                                 }`}
                                                                             />
                                                                         )
@@ -1117,76 +956,57 @@ const BrowseToolsDetails = ({ tool }) => {
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <p className="text-gray-700 leading-relaxed">
+                                                <p className="text-gray-700 dark:text-gray-400 leading-relaxed">
                                                     {review.comment}
                                                 </p>
                                             </div>
                                         ))}
-
-                                        {reviews.length === 0 && (
-                                            <div className="text-center py-12">
-                                                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                                                    <MessageSquare
-                                                        size={24}
-                                                        className="text-gray-400"
-                                                    />
-                                                </div>
-                                                <h4 className="font-medium text-gray-900 mb-2">
-                                                    No reviews yet
-                                                </h4>
-                                                <p className="text-gray-600 text-sm">
-                                                    Be the first to review this
-                                                    tool
-                                                </p>
-                                            </div>
-                                        )}
                                     </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
 
-                    {/* RIGHT SIDE: Sticky Booking Card */}
+                    {/* RIGHT SIDE: Booking Card */}
                     <div className="lg:col-span-5">
-                        <div className="sticky top-32 border rounded-3xl p-6 shadow-sm bg-white">
+                        <div className="sticky top-32 border dark:border-gray-800 rounded-3xl p-6 shadow-sm bg-white dark:bg-gray-900">
                             <div className="flex justify-between items-start mb-6">
-                                <h1 className="text-xl font-bold text-gray-900 leading-tight">
+                                <h1 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
                                     {tool.name}
                                 </h1>
-                                <div className="bg-[#E7F0ED] text-[#10513D] px-4 py-2 rounded-xl font-bold">
+                                <div className="bg-[#E7F0ED] dark:bg-emerald-900/30 text-[#10513D] dark:text-emerald-400 px-4 py-2 rounded-xl font-bold">
                                     ${pricePerDay}/Day
                                 </div>
                             </div>
-                            {/* Availability Timeline */}
                             {availableFrom && availableTo && (
-                                <div className="mb-6 p-4 bg-blue-50 rounded-2xl">
+                                <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl">
                                     <div className="flex items-center gap-3 mb-2">
                                         <Calendar
                                             size={18}
-                                            className="text-blue-600"
+                                            className="text-blue-600 dark:text-blue-400"
                                         />
-                                        <span className="font-semibold text-blue-700">
-                                            Availability
+                                        <span className="font-semibold text-blue-700 dark:text-blue-300">
+                                            Available Range
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between text-sm">
                                         <div className="text-center">
-                                            <p className="text-xs text-gray-500">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
                                                 From
                                             </p>
-                                            <p className="font-semibold text-gray-800">
+                                            <p className="font-semibold text-gray-800 dark:text-gray-200">
                                                 {format(
                                                     availableFrom,
                                                     "dd.MM.yy"
                                                 )}
                                             </p>
                                         </div>
-                                        <div className="flex-1 h-0.5 bg-blue-200 mx-4" />
+                                        <div className="flex-1 h-0.5 bg-blue-200 dark:bg-blue-800 mx-4" />
                                         <div className="text-center">
-                                            <p className="text-xs text-gray-500">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
                                                 To
                                             </p>
-                                            <p className="font-semibold text-gray-800">
+                                            <p className="font-semibold text-gray-800 dark:text-gray-200">
                                                 {format(
                                                     availableTo,
                                                     "dd.MM.yy"
@@ -1196,9 +1016,8 @@ const BrowseToolsDetails = ({ tool }) => {
                                     </div>
                                 </div>
                             )}
-                            {/* Lender Info */}
-                            <div className="flex items-center gap-3 mb-8 p-4 bg-gray-50 rounded-2xl">
-                                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200">
+                            <div className="flex items-center gap-3 mb-8 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl">
+                                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
                                     <img
                                         src={
                                             tool.user?.profile_photo_url ||
@@ -1206,12 +1025,11 @@ const BrowseToolsDetails = ({ tool }) => {
                                                 tool.user?.name || "Lender"
                                             }`
                                         }
-                                        alt={tool.user?.name || "Lender"}
                                         className="w-full h-full object-cover"
                                     />
                                 </div>
                                 <div>
-                                    <p className="font-bold text-sm">
+                                    <p className="font-bold text-sm dark:text-white">
                                         {tool.user?.name || "Lender"}
                                     </p>
                                     <div className="flex items-center gap-1 text-xs">
@@ -1220,13 +1038,13 @@ const BrowseToolsDetails = ({ tool }) => {
                                             fill="currentColor"
                                             className="text-yellow-400"
                                         />
-                                        <span className="text-gray-500 font-medium">
+                                        <span className="text-gray-500 dark:text-gray-400 font-medium">
                                             4.8 (156 reviews)
                                         </span>
                                     </div>
                                 </div>
                             </div>
-                            <div className="space-y-4 text-sm text-gray-600 mb-8 px-2">
+                            <div className="space-y-4 text-sm text-gray-600 dark:text-gray-400 mb-8 px-2">
                                 <div className="flex items-center gap-3">
                                     <MapPin
                                         size={18}
@@ -1241,25 +1059,19 @@ const BrowseToolsDetails = ({ tool }) => {
                                     />
                                     Condition: {tool.condition || "Excellent"}
                                 </div>
-                                <div className="flex items-center gap-3 text-green-600 font-semibold">
+                                <div className="flex items-center gap-3 text-green-600 dark:text-emerald-400 font-semibold">
                                     <CheckCircle2 size={18} />
-                                    {tool.status === "active"
-                                        ? "Available for rent"
-                                        : "Currently Unavailable"}
+                                    Stock Available: {tool.quantity} Units
                                 </div>
                             </div>
-
                             <button
                                 onClick={() => {
-                                    // ১. ডেট সিলেক্ট করা আছে কি না চেক
                                     if (!startDate || !endDate) {
                                         alert(
                                             "Please select start and end dates"
                                         );
                                         return;
                                     }
-
-                                    // ২. Inertia Router ব্যবহার করে ডেটা পাঠানো
                                     router.get(
                                         route("bookings.checkout", tool.id),
                                         {
@@ -1273,17 +1085,14 @@ const BrowseToolsDetails = ({ tool }) => {
                                             ),
                                             quantity: quantity,
                                         },
-                                        {
-                                            preserveState: true, // পেজ স্টেট ধরে রাখার জন্য
-                                            replace: false, // হিস্টোরি রিপ্লেস করবে না
-                                        }
+                                        { preserveState: true }
                                     );
                                 }}
                                 disabled={!availabilityStatus.isAvailable}
                                 className={`w-full py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 group shadow-lg ${
                                     availabilityStatus.isAvailable
-                                        ? "bg-[#10513D] text-white hover:bg-[#0c3d2e] shadow-green-100"
-                                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                        ? "bg-[#10513D] dark:bg-emerald-600 text-white hover:bg-[#0c3d2e] dark:hover:bg-emerald-700"
+                                        : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
                                 }`}
                             >
                                 {availabilityStatus.isAvailable
@@ -1296,12 +1105,11 @@ const BrowseToolsDetails = ({ tool }) => {
                                     />
                                 )}
                             </button>
-                            <button className="w-full mt-4 border border-gray-200 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-gray-50 transition-all text-gray-700">
+                            <button className="w-full mt-4 border border-gray-200 dark:border-gray-700 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-gray-700 dark:text-gray-300">
                                 <MessageSquare size={18} /> Chat with lender
                             </button>
-                            {/* Trust Badges */}
-                            <div className="mt-8 pt-6 border-t">
-                                <div className="flex items-center justify-around text-gray-500">
+                            <div className="mt-8 pt-6 border-t dark:border-gray-800">
+                                <div className="flex items-center justify-around text-gray-500 dark:text-gray-400">
                                     <div className="text-center">
                                         <Shield
                                             size={18}
@@ -1332,4 +1140,5 @@ const BrowseToolsDetails = ({ tool }) => {
         </GuestLayout>
     );
 };
+
 export default BrowseToolsDetails;

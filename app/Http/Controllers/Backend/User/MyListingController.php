@@ -23,7 +23,14 @@ class MyListingController extends Controller
             ->with(['images', 'specifications', 'guidelines'])
             ->latest()
             ->paginate((int) $perPage)
-            ->withQueryString();
+            ->withQueryString()->through(fn ($tool) => [
+                'id' => $tool->id,
+                'name' => $tool->name,
+                'category' => $tool->category?->name ?? 'N/A',
+                'status' => $tool->status,
+                'price_per_day' => $tool->price_per_day,
+                'image_url' => $tool->images->first()?->image_path,
+            ]);
 
         return inertia('User/Listing/Index', [
             'tools' => $tools,

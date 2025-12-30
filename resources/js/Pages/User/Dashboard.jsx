@@ -1,272 +1,285 @@
 import React from "react";
 import UserLayout from "@/Layouts/UserLayout";
+import { Head } from "@inertiajs/react";
 import {
     Box,
     RefreshCcw,
     CircleDollarSign,
-    ChevronLeft,
-    ChevronRight,
+    TrendingUp,
+    Star,
+    Calendar,
+    Download,
 } from "lucide-react";
+import {
+    LineChart,
+    Line,
+    PieChart,
+    Pie,
+    Cell,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+} from "recharts";
 
 export default function Dashboard() {
     const stats = [
         {
             label: "Total Listing",
             value: "120",
-            icon: <Box className="w-5 h-5 text-[#2D5A43]" />,
+            change: "+12%",
+            trend: "up",
+            icon: (
+                <Box className="w-5 h-5 text-[#2D5A43] dark:text-emerald-400" />
+            ),
         },
         {
-            label: "Total Renting",
-            value: "80",
-            icon: <RefreshCcw className="w-5 h-5 text-[#2D5A43]" />,
+            label: "Active Rents",
+            value: "24",
+            change: "+8%",
+            trend: "up",
+            icon: (
+                <RefreshCcw className="w-5 h-5 text-[#2D5A43] dark:text-emerald-400" />
+            ),
         },
         {
-            label: "Total Earning",
-            value: "$240",
-            icon: <CircleDollarSign className="w-5 h-5 text-[#2D5A43]" />,
+            label: "Total Earnings",
+            value: "$2,450",
+            change: "+18%",
+            trend: "up",
+            icon: (
+                <CircleDollarSign className="w-5 h-5 text-[#2D5A43] dark:text-emerald-400" />
+            ),
+        },
+        {
+            label: "Customer Reviews",
+            value: "4.8",
+            change: "+0.2",
+            trend: "up",
+            icon: (
+                <Star className="w-5 h-5 text-[#2D5A43] dark:text-emerald-400" />
+            ),
         },
     ];
 
+    const earningsData = [
+        { month: "Jan", earnings: 1800 },
+        { month: "Feb", earnings: 2100 },
+        { month: "Mar", earnings: 1900 },
+        { month: "Apr", earnings: 2400 },
+        { month: "May", earnings: 2200 },
+        { month: "Jun", earnings: 2450 },
+    ];
+
+    const categoryData = [
+        { name: "Gardening", value: 35, color: "#2D5A43" },
+        { name: "Construction", value: 25, color: "#437C61" },
+        { name: "Power Tools", value: 20, color: "#5FA883" },
+        { name: "Hand Tools", value: 15, color: "#7DD1A4" },
+        { name: "Other", value: 5, color: "#A7C4B5" },
+    ];
+
     return (
-        <div className="min-h-screen  space-y-10 font-sans text-[#1A1A1A]">
-            {/* 1. TOP STAT CARDS */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {stats.map((stat, index) => (
-                    <div
-                        key={index}
-                        className="bg-white p-8 rounded-[24px] flex justify-between items-start shadow-sm border border-white"
-                    >
-                        <div>
-                            <p className="text-[#1A1A1A] font-bold text-lg">
-                                {stat.label}
-                            </p>
-                            <p className="text-gray-400 text-xs mt-1 font-medium">
-                                Last 6 month
-                            </p>
-                            <p className="text-4xl font-bold mt-6">
-                                {stat.value}
-                            </p>
+        <UserLayout>
+            <Head title="Dashboard" />
+            <div className="space-y-6 font-sans text-[#1A1A1A] dark:text-gray-100 transition-colors duration-300">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                            Dashboard Overview
+                        </h1>
+                        <p className="text-gray-600 dark:text-gray-400 mt-1">
+                            Welcome back! Here's your tool performance.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
+                            <Calendar className="w-4 h-4" /> Last 6 Months
+                        </button>
+                        <button className="flex items-center gap-2 px-4 py-2 bg-[#2D5A43] dark:bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-[#1B3D2F] dark:hover:bg-emerald-700 transition-all shadow-md">
+                            <Download className="w-4 h-4" /> Export
+                        </button>
+                    </div>
+                </div>
+
+                {/* 1. STATS GRID */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {stats.map((stat, index) => (
+                        <div
+                            key={index}
+                            className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 transition-all"
+                        >
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">
+                                        {stat.label}
+                                    </p>
+                                    <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-white">
+                                        {stat.value}
+                                    </p>
+                                    <div className="flex items-center gap-1 mt-2 text-green-600 dark:text-emerald-400">
+                                        <TrendingUp className="w-4 h-4" />
+                                        <span className="text-sm font-medium">
+                                            {stat.change}
+                                        </span>
+                                        <span className="text-gray-500 dark:text-gray-500 text-xs ml-1">
+                                            last month
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="p-3 rounded-xl bg-[#E9F2EE] dark:bg-emerald-500/10 transition-colors">
+                                    {stat.icon}
+                                </div>
+                            </div>
                         </div>
-                        <div className="bg-[#E9F2EE] p-3 rounded-[12px]">
-                            {stat.icon}
+                    ))}
+                </div>
+
+                {/* 2. CHARTS SECTION */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Line Chart Card */}
+                    <div className="lg:col-span-2 bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">
+                            Earnings Overview
+                        </h3>
+                        <div className="h-80">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={earningsData}>
+                                    <CartesianGrid
+                                        strokeDasharray="3 3"
+                                        stroke="#e5e7eb"
+                                        className="dark:opacity-10"
+                                    />
+                                    <XAxis
+                                        dataKey="month"
+                                        stroke="#9ca3af"
+                                        fontSize={12}
+                                        tickLine={false}
+                                        axisLine={false}
+                                    />
+                                    <YAxis
+                                        stroke="#9ca3af"
+                                        fontSize={12}
+                                        tickLine={false}
+                                        axisLine={false}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: "#111827",
+                                            border: "none",
+                                            borderRadius: "8px",
+                                            color: "#fff",
+                                        }}
+                                        itemStyle={{ color: "#10b981" }}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="earnings"
+                                        stroke="#2D5A43"
+                                        strokeWidth={4}
+                                        dot={{ r: 4, fill: "#2D5A43" }}
+                                        activeDot={{ r: 6 }}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
                         </div>
                     </div>
-                ))}
+
+                    {/* Pie Chart Card */}
+                    <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">
+                            Tool Categories
+                        </h3>
+                        <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={categoryData}
+                                        cx="50%"
+                                        cy="50%"
+                                        outerRadius={80}
+                                        dataKey="value"
+                                    >
+                                        {categoryData.map((entry, index) => (
+                                            <Cell
+                                                key={`cell-${index}`}
+                                                fill={entry.color}
+                                            />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                        <div className="mt-4 space-y-2">
+                            {categoryData.map((category, index) => (
+                                <div
+                                    key={index}
+                                    className="flex items-center text-sm"
+                                >
+                                    <div
+                                        className="w-3 h-3 rounded-full mr-2"
+                                        style={{
+                                            backgroundColor: category.color,
+                                        }}
+                                    />
+                                    <span className="text-gray-700 dark:text-gray-300">
+                                        {category.name}
+                                    </span>
+                                    <span className="ml-auto font-bold dark:text-white">
+                                        {category.value}%
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. QUICK ACTIONS */}
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
+                    <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
+                        Quick Actions
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {[
+                            {
+                                title: "Add New Tool",
+                                desc: "List a new tool",
+                                icon: <Box className="w-6 h-6" />,
+                            },
+                            {
+                                title: "View Reports",
+                                desc: "Performance insights",
+                                icon: <TrendingUp className="w-6 h-6" />,
+                            },
+                            {
+                                title: "Download",
+                                desc: "Earnings report",
+                                icon: <Download className="w-6 h-6" />,
+                            },
+                        ].map((action, i) => (
+                            <button
+                                key={i}
+                                className="p-4 border border-gray-200 dark:border-gray-700 rounded-xl text-left hover:border-[#2D5A43] dark:hover:border-emerald-500 hover:bg-gray-50 dark:hover:bg-gray-800 group transition-all"
+                            >
+                                <div className="w-12 h-12 bg-[#E9F2EE] dark:bg-emerald-500/10 rounded-lg flex items-center justify-center mb-3 group-hover:bg-[#2D5A43] dark:group-hover:bg-emerald-600 transition-colors">
+                                    <span className="text-[#2D5A43] dark:text-emerald-400 group-hover:text-white">
+                                        {action.icon}
+                                    </span>
+                                </div>
+                                <h4 className="font-bold text-gray-900 dark:text-white">
+                                    {action.title}
+                                </h4>
+                                <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+                                    {action.desc}
+                                </p>
+                            </button>
+                        ))}
+                    </div>
+                </div>
             </div>
-
-            {/* 2. RECENT ACTIVITY SECTION */}
-            <section>
-                <h2 className="text-2xl font-bold mb-6">Recent Activity</h2>
-                <div className="bg-white rounded-[24px] shadow-sm overflow-hidden border border-white">
-                    <div className="p-8 pb-4">
-                        <h3 className="text-lg font-bold">Tools Listing</h3>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead className="bg-[#F8FAFA] text-gray-600 text-[13px] font-semibold border-b border-gray-100">
-                                <tr>
-                                    <th className="px-8 py-4">No</th>
-                                    <th className="px-6 py-4">Image</th>
-                                    <th className="px-6 py-4">Tool Name</th>
-                                    <th className="px-6 py-4">Category</th>
-                                    <th className="px-6 py-4">Location</th>
-                                    <th className="px-6 py-4">Status</th>
-                                    <th className="px-6 py-4">Price/day</th>
-                                    <th className="px-6 py-4">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50 text-[13px]">
-                                {[
-                                    {
-                                        status: "Open for rent",
-                                        color: "bg-[#A7C4B5] text-white",
-                                    },
-                                    {
-                                        status: "Pending",
-                                        color: "bg-[#FFE79B] text-[#8B6E1E]",
-                                    },
-                                    {
-                                        status: "Rejected",
-                                        color: "bg-[#E99A88] text-white",
-                                    },
-                                    {
-                                        status: "Open for rent",
-                                        color: "bg-[#A7C4B5] text-white",
-                                    },
-                                    {
-                                        status: "Rented",
-                                        color: "bg-[#E2E8F0] text-gray-500",
-                                    },
-                                ].map((item, i) => (
-                                    <tr key={i} className="hover:bg-gray-50">
-                                        <td className="px-8 py-4 text-gray-500">
-                                            {i + 1}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="w-10 h-8 bg-[#1B3D2F] rounded-md overflow-hidden"></div>
-                                        </td>
-                                        <td className="px-6 py-4 font-medium">
-                                            Gardening tools
-                                        </td>
-                                        <td className="px-6 py-4 text-gray-500">
-                                            Gardening Tool
-                                        </td>
-                                        <td className="px-6 py-4 text-gray-500">
-                                            New York
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span
-                                                className={`px-4 py-1.5 rounded-full text-[11px] font-semibold ${item.color}`}
-                                            >
-                                                {item.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 font-bold text-gray-700">
-                                            $20.00
-                                        </td>
-                                        <td className="px-6 py-4 text-[#437C61] underline text-xs font-bold cursor-pointer">
-                                            Check Details
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    <PaginationFooter />
-                </div>
-            </section>
-
-            {/* 3. RECENT RENT SECTION */}
-            <section>
-                <h2 className="text-2xl font-bold mb-6">Recent Rent</h2>
-                <div className="bg-white rounded-[24px] shadow-sm overflow-hidden border border-white">
-                    <div className="p-8 pb-4">
-                        <h3 className="text-lg font-bold">Rent list</h3>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead className="bg-[#F8FAFA] text-gray-600 text-[13px] font-semibold border-b border-gray-100">
-                                <tr>
-                                    <th className="px-8 py-4">No</th>
-                                    <th className="px-6 py-4">Image</th>
-                                    <th className="px-6 py-4">Tool Name</th>
-                                    <th className="px-6 py-4">Lender Name</th>
-                                    <th className="px-6 py-4">Location</th>
-                                    <th className="px-6 py-4">Rent Period</th>
-                                    <th className="px-6 py-4">Remain day</th>
-                                    <th className="px-6 py-4">Quantity</th>
-                                    <th className="px-6 py-4">Price/day</th>
-                                    <th className="px-6 py-4 text-center">
-                                        Status
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50 text-[13px]">
-                                {[
-                                    {
-                                        status: "Ongoing",
-                                        color: "bg-[#A7C4B5] text-white",
-                                        remain: "3 days",
-                                        remainColor: "text-red-500",
-                                    },
-                                    {
-                                        status: "Requested",
-                                        color: "bg-[#FFE79B] text-[#8B6E1E]",
-                                        remain: "4 days",
-                                        remainColor: "text-gray-500",
-                                    },
-                                    {
-                                        status: "Write a review",
-                                        color: "bg-[#E2E8F0] text-gray-600",
-                                        remain: "0 days",
-                                        remainColor: "text-gray-500",
-                                    },
-                                    {
-                                        status: "Write a review",
-                                        color: "bg-[#E2E8F0] text-gray-600",
-                                        remain: "0 days",
-                                        remainColor: "text-gray-500",
-                                    },
-                                    {
-                                        status: "Write a review",
-                                        color: "bg-[#E2E8F0] text-gray-600",
-                                        remain: "0 days",
-                                        remainColor: "text-gray-500",
-                                    },
-                                ].map((item, i) => (
-                                    <tr key={i} className="hover:bg-gray-50">
-                                        <td className="px-8 py-5 text-gray-500">
-                                            1
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <div className="w-10 h-8 bg-[#1B3D2F] rounded-md"></div>
-                                        </td>
-                                        <td className="px-6 py-5 font-medium">
-                                            Gardening tools
-                                        </td>
-                                        <td className="px-6 py-5 text-gray-500">
-                                            John Smith
-                                        </td>
-                                        <td className="px-6 py-5 text-gray-500">
-                                            New York
-                                        </td>
-                                        <td className="px-6 py-5 text-gray-500">
-                                            19.05.25-22.05.25
-                                        </td>
-                                        <td
-                                            className={`px-6 py-5 font-medium ${item.remainColor}`}
-                                        >
-                                            {item.remain}
-                                        </td>
-                                        <td className="px-6 py-5 text-gray-500">
-                                            05
-                                        </td>
-                                        <td className="px-6 py-5 font-bold text-gray-700">
-                                            $65.00
-                                        </td>
-                                        <td className="px-6 py-5 text-center">
-                                            <button
-                                                className={`px-4 py-1.5 rounded-full text-[11px] font-semibold min-w-[100px] ${item.color}`}
-                                            >
-                                                {item.status}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    <PaginationFooter />
-                </div>
-            </section>
-        </div>
+        </UserLayout>
     );
 }
-
-function PaginationFooter() {
-    return (
-        <div className="p-6 flex items-center justify-between text-[11px] text-gray-400 font-medium">
-            <div className="flex items-center gap-2">
-                <span>Rows per page:</span>
-                <div className="flex items-center gap-1 border border-gray-200 px-2 py-1 rounded-md cursor-pointer">
-                    <span className="text-gray-700">05</span>
-                    <ChevronRight size={12} className="rotate-90" />
-                </div>
-                <span className="ml-4">1-4 of 4</span>
-            </div>
-            <div className="flex gap-2">
-                <button className="p-1 border border-gray-100 rounded bg-white text-gray-300 cursor-not-allowed">
-                    <ChevronLeft size={16} />
-                </button>
-                <button className="w-6 h-6 flex items-center justify-center rounded bg-[#437C61] text-white">
-                    1
-                </button>
-                <button className="p-1 border border-gray-100 rounded bg-white text-gray-300">
-                    <ChevronRight size={16} />
-                </button>
-            </div>
-        </div>
-    );
-}
-
-Dashboard.layout = (page) => <UserLayout>{page}</UserLayout>;

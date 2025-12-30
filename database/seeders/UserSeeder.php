@@ -19,21 +19,15 @@ class UserSeeder extends Seeder
             'is_admin' => true,
             'email_verified_at' => now(),
         ]);
-        // user create
-        User::create([
-            'name' => 'user',
-            'email' => 'user@gmail.com',
-            'password' => bcrypt('12345678'),
-            'is_admin' => false,
-            'email_verified_at' => now(),
-        ]);
-        // user create
-        User::create([
-            'name' => 'user',
-            'email' => 'user1@gmail.com',
-            'password' => bcrypt('12345678'),
-            'is_admin' => false,
-            'email_verified_at' => now(),
-        ]);
+        // 10user loom
+        for ($i = 0; $i < 10; $i++) {
+            User::create([
+                'name' => 'user'.$i,
+                'email' => 'user'.$i.'@gmail.com',
+                'password' => bcrypt('12345678'),
+                'is_admin' => false,
+                'email_verified_at' => now(),
+            ]);
+        }
     }
 }

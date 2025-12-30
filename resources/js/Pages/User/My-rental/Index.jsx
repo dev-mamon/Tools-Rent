@@ -1,118 +1,227 @@
 import React from "react";
 import UserLayout from "@/Layouts/UserLayout";
 import Pagination from "@/Components/Pagination";
+import { Package, CheckCircle, Clock } from "lucide-react";
+import { Link, Head } from "@inertiajs/react";
 
-export default function MyRentals() {
-    const tableItems = [
+export default function MyRentals({
+    bookings,
+    totalBookings,
+    activeBookings,
+    pendingPayments,
+}) {
+    const stats = [
         {
-            name: "Gardening tools",
-            category: "Gardening Tool",
-            loc: "New York",
-            status: "Open for rent",
-            color: "bg-[#A7C4B5] text-white",
-            price: "$20.00",
+            label: "Total Bookings",
+            value: totalBookings || "0",
+            icon: (
+                <Package
+                    size={24}
+                    className="text-[#2D6A4F] dark:text-emerald-400"
+                />
+            ),
+            bgColor: "bg-[#E9F2EE] dark:bg-emerald-500/10",
         },
         {
-            name: "Lawn Mower",
-            category: "Power Tool",
-            loc: "London",
-            status: "Pending",
-            color: "bg-[#FFE79B] text-[#8B6E1E]",
-            price: "$45.00",
+            label: "Active Rentals",
+            value: activeBookings || "0",
+            icon: (
+                <CheckCircle
+                    size={24}
+                    className="text-[#2D6A4F] dark:text-emerald-400"
+                />
+            ),
+            bgColor: "bg-[#E9F2EE] dark:bg-emerald-500/10",
         },
         {
-            name: "Shovel Set",
-            category: "Hand Tool",
-            loc: "Paris",
-            status: "Rejected",
-            color: "bg-[#E99A88] text-white",
-            price: "$10.00",
-        },
-        {
-            name: "Hedge Trimmer",
-            category: "Power Tool",
-            loc: "Berlin",
-            status: "Rented",
-            color: "bg-[#E2E8F0] text-gray-500",
-            price: "$35.00",
+            label: "Pending Approvals",
+            value: pendingPayments || "0",
+            icon: (
+                <Clock
+                    size={24}
+                    className="text-[#2D6A4F] dark:text-emerald-400"
+                />
+            ),
+            bgColor: "bg-[#E9F2EE] dark:bg-emerald-500/10",
         },
     ];
 
+    const getStatusStyle = (status) => {
+        switch (status?.toLowerCase()) {
+            case "completed":
+            case "confirmed":
+                return "bg-[#2D6A4F] dark:bg-emerald-600 text-white";
+            case "pending":
+            case "in_progress":
+                return "bg-[#FFE79B] dark:bg-yellow-500/20 text-[#8B6E1E] dark:text-yellow-400";
+            case "cancelled":
+                return "bg-[#E99A88] dark:bg-red-500/20 text-white dark:text-red-400";
+            default:
+                return "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400";
+        }
+    };
+
     return (
         <UserLayout>
-            <div className="space-y-10 font-sans text-[#1A1A1A]">
-                {/* 1. RECENT ACTIVITY SECTION */}
+            <Head title="My Rentals" />
+            <div className="space-y-10 font-sans text-[#1A1A1A] dark:text-gray-100 transition-colors duration-300">
+                {/* Stats Cards Section */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {stats.map((stat, index) => (
+                        <div
+                            key={index}
+                            className="bg-white dark:bg-gray-900 p-8 rounded-[24px] flex justify-between items-start shadow-sm border border-white dark:border-gray-800 transition-all duration-300"
+                        >
+                            <div>
+                                <p className="text-[#1A1A1A] dark:text-gray-100 font-bold text-lg">
+                                    {stat.label}
+                                </p>
+                                <p className="text-gray-400 dark:text-gray-500 text-xs mt-1 font-medium">
+                                    Lifetime
+                                </p>
+                                <p className="text-4xl font-bold mt-6 text-gray-900 dark:text-white">
+                                    {stat.value}
+                                </p>
+                            </div>
+                            <div
+                                className={`${stat.bgColor} p-3 rounded-[12px] transition-colors`}
+                            >
+                                {stat.icon}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
                 <section>
                     <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold">My Rentals</h2>
-
-                        <button className="bg-[#2D6A4F] text-white px-6 py-2 rounded-lg text-sm font-semibold">
-                            + Add New Tool
-                        </button>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                            Rental Activity
+                        </h2>
+                        <Link href="/">
+                            <button className="bg-[#2D6A4F] dark:bg-emerald-600 text-white px-6 py-2 rounded-lg text-sm font-semibold hover:bg-[#1B3D2F] dark:hover:bg-emerald-700 transition-all">
+                                Explore Tools
+                            </button>
+                        </Link>
                     </div>
 
-                    <div className="bg-white rounded-[24px] shadow-sm overflow-hidden border border-white">
+                    <div className="bg-white dark:bg-gray-900 rounded-[24px] shadow-sm overflow-hidden border border-white dark:border-gray-800 transition-all duration-300">
                         <div className="p-8 pb-4">
-                            <h3 className="text-lg font-bold">Tools Listing</h3>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                Booking History
+                            </h3>
                         </div>
 
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
-                                <thead className="bg-[#F8FAFA] text-gray-600 text-[13px] font-semibold border-b border-gray-100">
+                                <thead className="bg-[#F8FAFA] dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 text-[13px] font-semibold border-b border-gray-100 dark:border-gray-800">
                                     <tr>
                                         <th className="px-8 py-4">No</th>
-                                        <th className="px-6 py-4">Image</th>
-                                        <th className="px-6 py-4">Tool Name</th>
-                                        <th className="px-6 py-4">Category</th>
-                                        <th className="px-6 py-4">Location</th>
+                                        <th className="px-6 py-4">Tool</th>
+                                        <th className="px-6 py-4">
+                                            Rental Period
+                                        </th>
+                                        <th className="px-6 py-4">
+                                            Total Days
+                                        </th>
                                         <th className="px-6 py-4">Status</th>
-                                        <th className="px-6 py-4">Price/day</th>
+                                        <th className="px-6 py-4">
+                                            Total Amount
+                                        </th>
                                         <th className="px-6 py-4">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-50 text-[13px]">
-                                    {tableItems.map((item, i) => (
-                                        <tr
-                                            key={i}
-                                            className="hover:bg-gray-50 transition-colors"
-                                        >
-                                            <td className="px-8 py-4 text-gray-500">
-                                                {i + 1}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="w-10 h-8 bg-[#1B3D2F] rounded-md"></div>
-                                            </td>
-                                            <td className="px-6 py-4 font-medium">
-                                                {item.name}
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-500">
-                                                {item.category}
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-500">
-                                                {item.loc}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span
-                                                    className={`px-4 py-1.5 rounded-full text-[11px] font-semibold ${item.color}`}
-                                                >
-                                                    {item.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 font-bold text-gray-700">
-                                                {item.price}
-                                            </td>
-                                            <td className="px-6 py-4 text-[#437C61] underline text-xs font-bold cursor-pointer">
-                                                Check Details
+                                <tbody className="divide-y divide-gray-50 dark:divide-gray-800 text-[13px]">
+                                    {bookings.data.length > 0 ? (
+                                        bookings.data.map((booking, i) => (
+                                            <tr
+                                                key={booking.id}
+                                                className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                                            >
+                                                <td className="px-8 py-4 text-gray-500 dark:text-gray-400">
+                                                    {(bookings.current_page -
+                                                        1) *
+                                                        bookings.per_page +
+                                                        i +
+                                                        1}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-8 bg-gray-200 dark:bg-gray-700 rounded-md overflow-hidden flex-shrink-0">
+                                                            {booking.thumbnail ? (
+                                                                <img
+                                                                    src={
+                                                                        booking.thumbnail.startsWith(
+                                                                            "http"
+                                                                        )
+                                                                            ? booking.thumbnail
+                                                                            : `/storage/${booking.thumbnail}`
+                                                                    }
+                                                                    className="w-full h-full object-cover"
+                                                                    alt={
+                                                                        booking.tool_name
+                                                                    }
+                                                                />
+                                                            ) : (
+                                                                <div className="w-full h-full bg-[#1B3D2F]"></div>
+                                                            )}
+                                                        </div>
+                                                        <span className="font-medium text-gray-800 dark:text-gray-200 truncate max-w-[150px]">
+                                                            {booking.tool_name}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 leading-relaxed">
+                                                    <div className="text-gray-800 dark:text-gray-200 font-semibold text-[13px]">
+                                                        {booking.start_date}
+                                                    </div>
+                                                    <div className="text-gray-500 dark:text-gray-500 text-[11px] font-bold mt-0.5 tracking-tight">
+                                                        TO {booking.end_date}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-gray-600 dark:text-gray-400 font-medium">
+                                                    {booking.total_days} Days
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span
+                                                        className={`px-4 py-1.5 rounded-full text-[11px] font-semibold capitalize ${getStatusStyle(
+                                                            booking.status
+                                                        )}`}
+                                                    >
+                                                        {booking.status.replace(
+                                                            "_",
+                                                            " "
+                                                        )}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 font-bold text-gray-800 dark:text-emerald-400 text-sm">
+                                                    ${booking.total_amount}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <Link
+                                                        href="#"
+                                                        className="text-[#437C61] dark:text-emerald-500 underline text-xs font-bold hover:text-[#2D6A4F] dark:hover:text-emerald-400 transition-colors"
+                                                    >
+                                                        Check Details
+                                                    </Link>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td
+                                                colSpan="7"
+                                                className="text-center py-10 text-gray-400 dark:text-gray-600 font-medium"
+                                            >
+                                                No rentals found.
                                             </td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
-                            <Pagination
-                                totalRows={4}
-                                rowsPerPage={5}
-                                currentPage={1}
-                            />
+
+                            <div className="p-4 dark:border-gray-800">
+                                <Pagination meta={bookings} />
+                            </div>
                         </div>
                     </div>
                 </section>

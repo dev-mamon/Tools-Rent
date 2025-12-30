@@ -1,70 +1,101 @@
 import Navbar from "@/Components/Frontend/Navbar";
+import { Search, ArrowRight, Leaf, Sparkles } from "lucide-react";
+import { Link } from "@inertiajs/react";
 
 export default function Banner() {
     return (
-        <section className="relative w-full overflow-hidden">
+        <section className="min-h-screen flex flex-col bg-[#4b4b4b] dark:bg-gray-950 relative overflow-hidden font-sans transition-colors duration-300">
             <Navbar />
 
-            {/* Hero Content Section */}
+            {/* লগইন পেজের মতো লেফট সাইড ব্যাকগ্রাউন্ড ওভারলে */}
             <div
-                className="pt-40 pb-28 flex flex-col items-center text-center px-6 relative z-10"
-                style={{
-                    background:
-                        "linear-gradient(180deg, #10513D 0%, #40885A 100%)",
-                }}
+                className="absolute left-0 top-0 h-full w-[55%] skew-x-12 -translate-x-32 hidden lg:block bg-cover bg-center opacity-50 dark:opacity-30"
+                style={{ backgroundImage: "url('/assets/images/banner.jpg')" }}
             >
-                <div className="mt-10 flex flex-col items-center">
-                    <div className="mb-6">
-                        <span className="bg-white/10 backdrop-blur-sm border border-white/20 px-5 py-1.5 rounded-full text-[11px] font-bold tracking-widest uppercase text-white">
-                            Share Tools. Grow Communities.
-                        </span>
-                    </div>
-                    <h1 className="text-5xl md:text-7xl font-bold leading-tight max-w-5xl mb-6 text-white">
-                        Rent Tools, Save Money; <br /> Build Together
-                    </h1>
-                    <p className="text-lg md:text-xl text-white/90 mb-10">
-                        Find the right tools in your neighborhood
-                    </p>
-                </div>
-
-                {/* Search Bar */}
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2 w-[90%] max-w-3xl z-30">
-                    <div className="flex items-center bg-white rounded-full p-2 shadow-2xl overflow-hidden">
-                        <div className="pl-6 pr-2">
-                            <svg
-                                className="w-5 h-5 text-gray-400"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2.5"
-                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                                />
-                            </svg>
-                        </div>
-                        <input
-                            type="text"
-                            placeholder="Search for what you want to rent"
-                            className="w-full py-3.5 text-gray-800 placeholder-gray-400 border-none focus:ring-0"
-                        />
-                        <button className="bg-[#40885A] hover:bg-[#10513D] text-white px-12 py-3.5 rounded-full font-bold transition-all shadow-md">
-                            Search
-                        </button>
-                    </div>
-                </div>
+                <div className="absolute inset-0 bg-black/70" />
             </div>
 
-            {/* Background Image Area */}
-            <div className="relative w-full h-[450px] z-0">
-                <img
-                    src="/assets/images/banner.jpg"
-                    alt="Garden Background"
-                    className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black/10"></div>
+            {/* Main Content Area */}
+            <div className="flex-grow flex items-center justify-center relative z-10 p-4 pt-32 lg:pt-20">
+                {/* লগইন পেজের হুবহু কার্ড ডিজাইন (w-full max-w-[960px] min-h-[560px]) */}
+                <div className="relative w-full max-w-[1000px] min-h-[600px] bg-white dark:bg-gray-900 rounded-[40px] shadow-2xl flex overflow-hidden border border-transparent dark:border-gray-800 transition-all">
+                    {/* LEFT IMAGE (লগইন পেজের মতো grayscale ইমেজ সেকশন) */}
+                    <div className="hidden md:flex w-[45%] p-5">
+                        <div className="w-full h-full rounded-[28px] overflow-hidden grayscale-[20%] dark:grayscale-[50%] relative group">
+                            <img
+                                src="/assets/images/banner.jpg"
+                                alt="Tools Visual"
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+                            />
+                            <div className="absolute inset-0 bg-emerald-900/20" />
+                        </div>
+                    </div>
+
+                    {/* RIGHT CONTENT (লগইন পেজের ফর্মের জায়গায় এখন টাইটেল ও সার্চ) */}
+                    <div className="w-full md:w-[55%] px-10 lg:px-16 py-14 flex flex-col justify-center">
+                        {/* Logo & Badge */}
+                        <div className="mb-10">
+                            <div className="flex flex-col items-center lg:items-start mb-6">
+                                <div className="w-12 h-12 flex items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 text-[#2d5a43] dark:text-emerald-400">
+                                    <Leaf
+                                        className="w-6 h-6"
+                                        strokeWidth={1.8}
+                                    />
+                                </div>
+                                <span className="mt-2 text-[#2d5a43] dark:text-emerald-400 font-black text-xl uppercase tracking-tighter">
+                                    Jardiloc
+                                </span>
+                            </div>
+
+                            <h1 className="text-4xl lg:text-5xl font-black text-gray-900 dark:text-white leading-[1.1] tracking-tight mb-4 text-center lg:text-left">
+                                Don't Buy It. <br />
+                                <span className="text-emerald-600 dark:text-emerald-400">
+                                    Just Rent It.
+                                </span>
+                            </h1>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium text-center lg:text-left">
+                                Access high-quality tools in your neighborhood.
+                            </p>
+                        </div>
+
+                        {/* Search Section (লগইন পেজের ইনপুট স্টাইল) */}
+                        <div className="space-y-6 max-w-[400px] mx-auto lg:ml-0 w-full">
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
+                                    Find what you need
+                                </label>
+                                <div className="group relative">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-emerald-500 transition-colors">
+                                        <Search size={18} />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Search tools (mowers, drills...)"
+                                        className="w-full pl-11 pr-4 py-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 text-gray-900 dark:text-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="pt-2 flex flex-col gap-3">
+                                <button className="w-full bg-[#10513D] dark:bg-emerald-600 hover:bg-[#1a6b52] dark:hover:bg-emerald-500 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-900/20 dark:shadow-black/20 transition-all flex items-center justify-center gap-2 active:scale-95 group">
+                                    Search Now
+                                    <ArrowRight
+                                        size={18}
+                                        className="group-hover:translate-x-1 transition-transform"
+                                    />
+                                </button>
+
+                                <Link
+                                    href={route("register")}
+                                    className="w-full flex justify-center items-center border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-bold py-4 rounded-2xl text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                                >
+                                    Become a Lender
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
     );
