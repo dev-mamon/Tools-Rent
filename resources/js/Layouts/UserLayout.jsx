@@ -27,8 +27,6 @@ export default function UserLayout({ children }) {
     }, [flash]);
 
     return (
-        /* Dark mode support er jonno bg color dynamic kora hoyeche */
-        /* Light: bg-[#E7EEEC] | Dark: bg-gray-950 */
         <div className="flex min-h-screen bg-[#E7EEEC] dark:bg-gray-950 transition-colors duration-300">
             <Toaster />
             <div className="h-screen sticky top-0 border-r border-gray-200 dark:border-gray-800">

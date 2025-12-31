@@ -1,7 +1,6 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
     Search,
-    Bell,
     ChevronDown,
     Plus,
     LogOut,
@@ -11,7 +10,7 @@ import {
     Menu,
 } from "lucide-react";
 import { usePage, Link, router } from "@inertiajs/react";
-import Sidebar from "./Sidebar"; // Import your Sidebar
+import Sidebar from "./Sidebar";
 
 const Navbar = () => {
     const { auth } = usePage().props;
@@ -19,8 +18,8 @@ const Navbar = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const dropdownRef = useRef(null);
 
-    const [darkMode, setDarkMode] = useState(
-        () => localStorage.getItem("theme") === "dark"
+    const [darkMode, setDarkMode] = useState(() =>
+        document.documentElement.classList.contains("dark")
     );
 
     const toggleDarkMode = () => {
@@ -33,9 +32,8 @@ const Navbar = () => {
     return (
         <>
             <nav className="h-16 md:h-20 bg-white dark:bg-gray-900 flex items-center justify-between px-4 md:px-8 sticky top-0 z-40 border-b border-gray-100 dark:border-gray-800 transition-colors duration-300">
-                {/* Left Section */}
+                {/* Left Section (Start Section) */}
                 <div className="flex items-center gap-4">
-                    {/* Mobile Menu Toggle */}
                     <button
                         onClick={() => setMobileMenuOpen(true)}
                         className="lg:hidden p-2 text-gray-600 dark:text-gray-300"
@@ -47,7 +45,8 @@ const Navbar = () => {
                         Dashboard
                     </h1>
 
-                    <div className="hidden xl:flex items-center gap-6 ml-4">
+                    {/* ms-4 is Margin Start (Left in LTR, Right in RTL) */}
+                    <div className="hidden xl:flex items-center gap-6 ms-4">
                         {["Overview", "Analytics", "Tools"].map((item) => (
                             <Link
                                 key={item}
@@ -60,18 +59,19 @@ const Navbar = () => {
                     </div>
                 </div>
 
-                {/* Right Section */}
+                {/* Right Section (End Section) */}
                 <div className="flex items-center gap-2 md:gap-6">
-                    {/* Search - Hidden on Mobile, shown via icon or expanded on MD */}
                     <div className="hidden md:block relative w-48 lg:w-80">
+                        {/* Use start-4 instead of left-4 */}
                         <Search
-                            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                            className="absolute start-4 top-1/2 -translate-y-1/2 text-gray-400"
                             size={18}
                         />
+                        {/* ps-12 (padding-start) instead of pl-12 */}
                         <input
                             type="text"
                             placeholder="Search..."
-                            className="w-full pl-12 pr-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:outline-none"
+                            className="w-full ps-12 pe-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:outline-none"
                         />
                     </div>
 
@@ -119,7 +119,8 @@ const Navbar = () => {
                             </button>
 
                             {isOpen && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 py-2 z-50">
+                                /* right-0 (LTR) becomes left-0 (RTL) automatically with logical properties if using absolute positioning correctly */
+                                <div className="absolute end-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 py-2 z-50">
                                     <Link
                                         href={route("user.setting.index")}
                                         className="flex items-center gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
@@ -152,7 +153,8 @@ const Navbar = () => {
                         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
                         onClick={() => setMobileMenuOpen(false)}
                     ></div>
-                    <div className="fixed inset-y-0 left-0 w-[280px] bg-white dark:bg-gray-900 shadow-xl">
+                    {/* left-0 becomes right-0 in RTL */}
+                    <div className="fixed inset-y-0 start-0 w-[280px] bg-white dark:bg-gray-900 shadow-xl">
                         <Sidebar
                             isMobile={true}
                             closeSidebar={() => setMobileMenuOpen(false)}

@@ -6,8 +6,6 @@ export default function Banner() {
     return (
         <section className="min-h-screen flex flex-col bg-[#4b4b4b] dark:bg-gray-950 relative overflow-hidden font-sans transition-colors duration-300">
             <Navbar />
-
-            {/* লগইন পেজের মতো লেফট সাইড ব্যাকগ্রাউন্ড ওভারলে */}
             <div
                 className="absolute left-0 top-0 h-full w-[55%] skew-x-12 -translate-x-32 hidden lg:block bg-cover bg-center opacity-50 dark:opacity-30"
                 style={{ backgroundImage: "url('/assets/images/banner.jpg')" }}
@@ -17,9 +15,7 @@ export default function Banner() {
 
             {/* Main Content Area */}
             <div className="flex-grow flex items-center justify-center relative z-10 p-4 pt-32 lg:pt-20">
-                {/* লগইন পেজের হুবহু কার্ড ডিজাইন (w-full max-w-[960px] min-h-[560px]) */}
                 <div className="relative w-full max-w-[1000px] min-h-[600px] bg-white dark:bg-gray-900 rounded-[40px] shadow-2xl flex overflow-hidden border border-transparent dark:border-gray-800 transition-all">
-                    {/* LEFT IMAGE (লগইন পেজের মতো grayscale ইমেজ সেকশন) */}
                     <div className="hidden md:flex w-[45%] p-5">
                         <div className="w-full h-full rounded-[28px] overflow-hidden grayscale-[20%] dark:grayscale-[50%] relative group">
                             <img

@@ -81,4 +81,24 @@ class SettingController extends Controller
 
         return back()->with('success', 'Password updated successfully!');
     }
+
+    public function commission()
+    {
+        return Inertia::render(component: 'User/Policies/CommissionPolicy');
+    }
+
+    public function legalNotice()
+    {
+        return Inertia::render('User/Policies/LegalNotice');
+    }
+
+    public function privacy()
+    {
+        return Inertia::render('User/Policies/PrivacyPolicy');
+    }
+
+    public function terms()
+    {
+        return Inertia::render('User/Policies/TermsAndCondition');
+    }
 }

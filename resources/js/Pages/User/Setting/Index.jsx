@@ -1,6 +1,6 @@
 import React from "react";
 import UserLayout from "@/Layouts/UserLayout";
-import { Link, Head } from "@inertiajs/react";
+import { Link, Head, useForm } from "@inertiajs/react";
 import {
     ChevronRight,
     Key,
@@ -14,9 +14,22 @@ import {
 } from "lucide-react";
 
 export default function ProfileSettings({ user }) {
+    const { delete: destroy } = useForm();
+
+    const handleDeleteAccount = () => {
+        if (
+            confirm(
+                "Are you sure you want to delete your account? This action cannot be undone."
+            )
+        ) {
+            destroy(route("profile.destroy"));
+        }
+    };
+
     return (
         <UserLayout>
             <Head title="Profile Settings" />
+
             <div className="min-h-screen bg-[#F8FAFB] dark:bg-gray-950 relative overflow-hidden -m-4 p-6 md:p-10 transition-colors duration-300">
                 {/* Background Decorations */}
                 <div className="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-[#437C61]/5 dark:bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none"></div>
@@ -30,18 +43,21 @@ export default function ProfileSettings({ user }) {
                                 src={
                                     user.avatar
                                         ? `/storage/${user.avatar}`
-                                        : `https://ui-avatars.com/api/?name=${user.name}&background=2D6A4F&color=fff`
+                                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                              user.name
+                                          )}&background=2D6A4F&color=fff`
                                 }
                                 className="w-24 h-24 rounded-2xl object-cover ring-4 ring-gray-50 dark:ring-gray-800"
                                 alt={user.name}
                             />
                             <Link
                                 href={route("user.setting.edit-profile")}
-                                className="absolute -bottom-2 -right-2 bg-white dark:bg-gray-800 p-1.5 rounded-full shadow-md border border-gray-50 dark:border-gray-700 text-[#437C61] dark:text-emerald-400"
+                                className="absolute -bottom-2 -right-2 bg-white dark:bg-gray-800 p-1.5 rounded-full shadow-md border border-gray-50 dark:border-gray-700 text-[#437C61] dark:text-emerald-400 hover:scale-110 transition-transform"
                             >
                                 <Edit3 size={14} />
                             </Link>
                         </div>
+
                         <div className="flex-1 text-center md:text-left">
                             <div className="space-y-1">
                                 <p className="text-[15px] text-gray-800 dark:text-gray-200 font-semibold">
@@ -65,7 +81,7 @@ export default function ProfileSettings({ user }) {
                             </div>
                             <Link
                                 href={route("user.setting.edit-profile")}
-                                className="inline-block mt-4 px-8 py-2 border border-[#437C61] dark:border-emerald-500 text-[#437C61] dark:text-emerald-400 text-[12px] font-bold rounded-full hover:bg-[#437C61] dark:hover:bg-emerald-500 hover:text-white transition-all"
+                                className="inline-block mt-4 px-8 py-2 border border-[#437C61] dark:border-emerald-500 text-[#437C61] dark:text-emerald-400 text-[12px] font-bold rounded-full hover:bg-[#437C61] dark:hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
                             >
                                 Edit Profile
                             </Link>
@@ -97,7 +113,7 @@ export default function ProfileSettings({ user }) {
                                     </div>
                                     <ChevronRight
                                         size={20}
-                                        className="text-gray-300 dark:text-gray-600"
+                                        className="text-gray-300 dark:text-gray-600 group-hover:translate-x-1 transition-transform"
                                     />
                                 </Link>
                             </div>
@@ -111,22 +127,22 @@ export default function ProfileSettings({ user }) {
                                         {
                                             icon: <ShieldCheck size={20} />,
                                             label: "Privacy Policy (GDPR)",
-                                            link: "#",
+                                            link: "/user/setting/privacy-policy",
                                         },
                                         {
                                             icon: <Scale size={20} />,
                                             label: "Commission Policy",
-                                            link: "#",
+                                            link: "/user/setting/commission-policy",
                                         },
                                         {
                                             icon: <FileText size={20} />,
                                             label: "Terms & Condition",
-                                            link: "#",
+                                            link: "/user/setting/terms-conditions",
                                         },
                                         {
                                             icon: <FileText size={20} />,
                                             label: "Legal Notice",
-                                            link: "#",
+                                            link: "/user/setting/legal-notice",
                                         },
                                     ].map((item, idx) => (
                                         <Link
@@ -201,6 +217,7 @@ export default function ProfileSettings({ user }) {
                                             Log Out
                                         </Link>
                                     </div>
+
                                     {/* Delete Account */}
                                     <div className="bg-white dark:bg-gray-900 rounded-[16px] p-5 flex justify-between items-center shadow-sm border border-transparent dark:border-gray-800">
                                         <div className="flex items-center gap-3 text-red-600 dark:text-red-500 font-semibold">
@@ -209,7 +226,10 @@ export default function ProfileSettings({ user }) {
                                                 Delete Account
                                             </span>
                                         </div>
-                                        <button className="bg-red-600 text-white px-6 py-2 rounded-xl text-[12px] font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20">
+                                        <button
+                                            onClick={handleDeleteAccount}
+                                            className="bg-red-600 text-white px-6 py-2 rounded-xl text-[12px] font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20"
+                                        >
                                             Delete
                                         </button>
                                     </div>

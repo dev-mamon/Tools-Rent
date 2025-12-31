@@ -9,7 +9,7 @@ use App\Http\Controllers\Backend\User\SettingController;
 use App\Http\Controllers\Frontend\BookingController;
 use App\Http\Controllers\Frontend\BrowseToolsController;
 use App\Http\Controllers\Frontend\HomeController;
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PolicyController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -23,12 +23,6 @@ Route::get('/dashboard', function () {
 
     return Inertia::render('User/Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
-
-// Route::middleware('auth')->group(function () {
-//     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-//     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-//     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-// });
 
 // frontend route
 Route::controller(BrowseToolsController::class)->group(function () {
@@ -104,6 +98,13 @@ Route::controller(SettingController::class)->prefix('user/setting')->name('user.
 
     Route::post('/update-profile', 'updateProfile')->name('update-profile');
     Route::post('/update-password', 'updatePassword')->name('update-password');
+
+    // privacy policy
+    Route::get('/commission-policy', 'commission')->name('policy.commission');
+    Route::get('/legal-notice', 'legalNotice')->name('policy.legal');
+    Route::get('/privacy-policy', 'privacy')->name('policy.privacy');
+    // Use 'terms' or 'terms-and-conditions' for the URL
+    Route::get('/terms-conditions','terms')->name('policy.terms');
 });
 
 require __DIR__.'/auth.php';
