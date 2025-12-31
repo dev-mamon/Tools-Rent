@@ -3,14 +3,13 @@ import { router, usePage } from "@inertiajs/react";
 import UserLayout from "@/Layouts/UserLayout";
 import {
     Search,
-    Plus,
-    Mic,
     SendHorizontal,
-    X,
     MessageSquare,
-    Clock,
     Check,
     CheckCheck,
+    MoreHorizontal,
+    SquarePen,
+    BellOff,
 } from "lucide-react";
 
 export default function Message() {
@@ -21,140 +20,116 @@ export default function Message() {
         messages: initialMessages,
         authUser,
     } = usePage().props;
+
     const [searchQuery, setSearchQuery] = useState("");
-    const [searchResults, setSearchResults] = useState([]);
-    const [showSearchResults, setShowSearchResults] = useState(false);
-    const [isSearching, setIsSearching] = useState(false);
     const [messageText, setMessageText] = useState("");
     const [loading, setLoading] = useState(false);
-    const [messages, setMessages] = useState(initialMessages || []);
+    const [messages, setMessages] = useState([]);
+    const [isTyping, setIsTyping] = useState(false);
+
     const messagesEndRef = useRef(null);
-    const messagesContainerRef = useRef(null);
+    const typingTimeoutRef = useRef(null);
 
-    // WebSocket subscription for real-time messages
-    useEffect(() => {
-        if (!selectedUser) return;
-
-        // Subscribe to private channel for receiving messages
-        window.Echo.private(`user.${authUser.id}`).listen(
-            ".MessageSent",
-            (event) => {
-                // Only add message if it's from the currently selected user
-                if (event.sender_id === selectedUser.id) {
-                    const newMessage = {
-                        id: event.id,
-                        message: event.message,
-                        sender_id: event.sender_id,
-                        is_sent_by_me: false,
-                        created_at_full: event.created_at_full,
-                        created_at: formatMessageTime(event.created_at_full),
-                        is_read: event.is_read,
-                    };
-
-                    setMessages((prev) => [...prev, newMessage]);
-
-                    // Mark message as read
-                    router.post(route("user.message.mark-read"), {
-                        sender_id: event.sender_id,
-                    });
-                }
-            }
-        );
-
-        // Cleanup on unmount
-        return () => {
-            window.Echo.private(`user.${authUser.id}`).stopListening(
-                ".MessageSent"
-            );
-        };
-    }, [selectedUser, authUser.id]);
-
-    // Update messages when selected user changes
     useEffect(() => {
         setMessages(initialMessages || []);
-        scrollToBottom();
     }, [initialMessages]);
 
-    // Scroll to bottom when new messages arrive
+    // WebSocket Listeners
     useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
+        const channel = window.Echo.private(`user.${authUser.id}`);
 
-    const scrollToBottom = () => {
-        if (messagesContainerRef.current) {
-            messagesContainerRef.current.scrollTop =
-                messagesContainerRef.current.scrollHeight;
+        channel.listen(".MessageSent", (event) => {
+            if (selectedUser && event.sender_id === selectedUser.id) {
+                const incoming = {
+                    id: event.id,
+                    message: event.message,
+                    sender_id: event.sender_id,
+                    is_sent_by_me: false,
+                    created_at_full: event.created_at_full,
+                    is_read: true,
+                };
+                setMessages((prev) => [...prev, incoming]);
+                router.post(
+                    route("user.message.mark-read"),
+                    { sender_id: event.sender_id },
+                    {
+                        preserveScroll: true,
+                        preserveState: true,
+                        showProgress: false,
+                    }
+                );
+            } else {
+                router.reload({
+                    only: ["chatList"],
+                    preserveState: true,
+                    showProgress: false,
+                });
+            }
+        });
+
+        channel.listen(".UserTyping", (event) => {
+            if (selectedUser && event.user_id === selectedUser.id) {
+                setIsTyping(event.is_typing);
+            }
+        });
+
+        return () =>
+            channel.stopListening(".MessageSent").stopListening(".UserTyping");
+    }, [selectedUser, authUser.id]);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages, isTyping]);
+
+    // Search Logic
+    useEffect(() => {
+        if (searchQuery.length > 0) {
+            const delayDebounceFn = setTimeout(() => {
+                router.get(
+                    route("user.message.index"),
+                    { search: searchQuery },
+                    {
+                        preserveState: true,
+                        preserveScroll: true,
+                        showProgress: false,
+                        only: ["searchUsers"],
+                    }
+                );
+            }, 300);
+            return () => clearTimeout(delayDebounceFn);
         }
-    };
+    }, [searchQuery]);
 
-    // Handle search input with debounce
-    const handleSearch = (e) => {
-        const query = e.target.value;
-        setSearchQuery(query);
+    // Typing Logic
+    const handleInputChange = (e) => {
+        setMessageText(e.target.value);
+        if (!selectedUser) return;
 
-        if (query.trim() === "") {
-            setShowSearchResults(false);
-            setSearchResults([]);
-            return;
-        }
+        router.post(
+            route("user.message.typing"),
+            { receiver_id: selectedUser.id, is_typing: true },
+            { preserveState: true, preserveScroll: true, showProgress: false }
+        );
 
-        setIsSearching(true);
-
-        // Debounce search
-        const timer = setTimeout(() => {
-            router.get(
-                route("user.message.index"),
-                { search: query },
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => {
+            router.post(
+                route("user.message.typing"),
+                { receiver_id: selectedUser.id, is_typing: false },
                 {
                     preserveState: true,
-                    replace: true,
-                    onSuccess: () => {
-                        setSearchResults(searchUsers || []);
-                        setShowSearchResults(true);
-                        setIsSearching(false);
-                    },
-                    onError: () => {
-                        setIsSearching(false);
-                    },
+                    preserveScroll: true,
+                    showProgress: false,
                 }
             );
-        }, 500);
-
-        return () => clearTimeout(timer);
+        }, 2000);
     };
 
-    // Clear search
-    const clearSearch = () => {
-        setSearchQuery("");
-        setShowSearchResults(false);
-        setSearchResults([]);
-        router.get(route("user.message.index"), {}, { preserveState: true });
-    };
-
-    // Select user to chat with
-    const selectUser = (user) => {
-        router.get(
-            route("user.message.index"),
-            { selected_user: user.id },
-            {
-                preserveState: true,
-                onSuccess: () => {
-                    setShowSearchResults(false);
-                    setSearchQuery("");
-                },
-            }
-        );
-    };
-
-    // Send message
-    // Send message using Inertia router instead of fetch
     const sendMessage = (e) => {
         e.preventDefault();
-
-        if (!messageText.trim() || !selectedUser || loading) return;
+        if (!messageText.trim() || loading) return;
 
         setLoading(true);
-
         router.post(
             route("user.message.store"),
             {
@@ -162,393 +137,264 @@ export default function Message() {
                 message: messageText,
             },
             {
-                // This prevents a full page reload and keeps the scroll position
+                onSuccess: () => setMessageText(""),
+                onFinish: () => setLoading(false),
                 preserveScroll: true,
                 preserveState: true,
-                onSuccess: () => {
-                    setMessageText("");
-                    scrollToBottom();
-                },
-                onFinish: () => {
-                    setLoading(false);
-                },
+                showProgress: false,
             }
         );
     };
 
-    // Format time for display
-    const formatMessageTime = (timestamp) => {
-        const date = new Date(timestamp);
-        return date.toLocaleTimeString("en-US", {
-            hour: "numeric",
+    const formatTime = (stamp) => {
+        return new Date(stamp).toLocaleTimeString([], {
+            hour: "2-digit",
             minute: "2-digit",
-            hour12: true,
         });
     };
+    const formatLastMsgTime = (timestamp) => {
+        if (!timestamp) return "";
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
 
-    // Group messages by date
-    const groupMessagesByDate = () => {
-        const groups = {};
-        messages.forEach((message) => {
-            const date = new Date(message.created_at_full).toLocaleDateString(
-                "en-US",
-                {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                }
-            );
+        if (diffInSeconds < 60) return "Just now";
 
-            if (!groups[date]) {
-                groups[date] = [];
-            }
-            groups[date].push(message);
-        });
-        return groups;
+        const diffInMinutes = Math.floor(diffInSeconds / 60);
+        if (diffInMinutes < 60) return `${diffInMinutes}m`;
+
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        if (diffInHours < 24) return `${diffInHours}h`;
+
+        const diffInDays = Math.floor(diffInHours / 24);
+        if (diffInDays < 7) return `${diffInDays}d`;
+
+        return date.toLocaleDateString([], { month: "short", day: "numeric" });
     };
-
-    const messageGroups = groupMessagesByDate();
-    const displayList = showSearchResults ? searchResults : chatList;
 
     return (
         <UserLayout>
-            <div className="flex h-[calc(100vh-120px)] gap-6 font-sans transition-colors duration-300">
-                {/* --- LEFT SIDE: INBOX LIST --- */}
-                <div className="w-1/3 bg-white dark:bg-gray-900 rounded-[24px] flex flex-col overflow-hidden shadow-sm border border-gray-50 dark:border-gray-800">
-                    <div className="p-6">
-                        <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
-                            {showSearchResults ? "Search Results" : "Inbox"}
-                        </h2>
-                        <div className="relative">
+            <div className="flex h-[calc(100vh-100px)] bg-white dark:bg-black antialiased">
+                {/* Sidebar */}
+                <div className="w-[360px] border-r dark:border-gray-800 flex flex-col overflow-hidden">
+                    <div className="px-4 pt-4 pb-2">
+                        <div className="flex justify-between items-center mb-4">
+                            <h1 className="text-2xl font-bold dark:text-white">
+                                Chats
+                            </h1>
+                        </div>
+
+                        <div className="relative mb-4">
                             <Search
-                                className="absolute left-3 top-3 text-gray-400 dark:text-gray-500"
+                                className="absolute left-3 top-2.5 text-gray-500"
                                 size={18}
                             />
                             <input
-                                type="text"
-                                placeholder="Search users..."
                                 value={searchQuery}
-                                onChange={handleSearch}
-                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-800 border-none rounded-xl text-sm focus:ring-1 focus:ring-[#437C61] dark:text-gray-200 dark:placeholder-gray-500"
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full border-none focus:ring-0 text-[15px]"
+                                placeholder="Search Messenger"
                             />
-                            {searchQuery && (
-                                <button
-                                    onClick={clearSearch}
-                                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                                >
-                                    <X size={18} />
-                                </button>
-                            )}
                         </div>
-
-                        {!showSearchResults && (
-                            <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 mt-4 uppercase tracking-wider">
-                                Conversations
-                            </p>
-                        )}
                     </div>
-
-                    {/* User List */}
-                    <div className="flex-1 overflow-y-auto px-2 pb-4 custom-scrollbar">
-                        {isSearching ? (
-                            <div className="text-center py-8">
-                                <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#437C61]"></div>
-                                <p className="text-gray-500 dark:text-gray-400 mt-2">
-                                    Searching...
-                                </p>
-                            </div>
-                        ) : displayList.length > 0 ? (
-                            displayList.map((user) => (
-                                <div
-                                    key={user.id}
-                                    onClick={() => selectUser(user)}
-                                    className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
-                                        selectedUser?.id === user.id
-                                            ? "bg-gray-50 dark:bg-gray-800 border-l-4 border-[#437C61]"
-                                            : ""
-                                    }`}
-                                >
+                    <div className="flex-1 overflow-y-auto px-2 custom-scrollbar">
+                        {(searchQuery ? searchUsers : chatList)?.map((user) => (
+                            <div
+                                key={user.id}
+                                onClick={() =>
+                                    router.get(
+                                        route("user.message.index"),
+                                        {
+                                            selected_user: user.id,
+                                        },
+                                        {
+                                            preserveState: true,
+                                            preserveScroll: true,
+                                            showProgress: false,
+                                        }
+                                    )
+                                }
+                                className={`flex items-center gap-3 p-3 mx-2 rounded-2xl cursor-pointer transition-all ${
+                                    selectedUser?.id === user.id
+                                        ? "bg-[#E7F3FF] dark:bg-blue-900/20"
+                                        : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                                }`}
+                            >
+                                <div className="relative flex-shrink-0">
                                     <img
-                                        src={user.avatar}
-                                        className="w-11 h-11 rounded-full object-cover border-2 border-transparent dark:border-gray-700"
-                                        alt={user.name}
-                                        onError={(e) => {
-                                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                                user.name
-                                            )}&background=437C61&color=fff`;
-                                        }}
+                                        src={
+                                            user.avatar ||
+                                            `https://ui-avatars.com/api/?name=${user.name}&background=437C61&color=fff`
+                                        }
+                                        className="w-14 h-14 rounded-full object-cover"
                                     />
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex justify-between items-center">
-                                            <h4 className="font-bold text-[14px] text-gray-900 dark:text-gray-200">
+                                    <div className="absolute bottom-0 right-0 w-4 h-4 bg-[#31A24C] border-2 border-white dark:border-gray-900 rounded-full"></div>
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-start">
+                                        <div className="truncate">
+                                            <h4
+                                                className={`text-[15px] truncate dark:text-gray-100 ${
+                                                    user.unread > 0
+                                                        ? "font-bold"
+                                                        : "font-medium"
+                                                }`}
+                                            >
                                                 {user.name}
                                             </h4>
-                                            {user.time && (
-                                                <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                                                    {user.time}
-                                                </span>
+                                            <p
+                                                className={`text-[14px] truncate ${
+                                                    user.unread > 0
+                                                        ? "font-bold text-black dark:text-white"
+                                                        : "text-gray-500"
+                                                }`}
+                                            >
+                                                {user.lastMsg || user.email}
+                                            </p>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-2">
+                                            <span className="text-xs text-gray-500">
+                                                {formatLastMsgTime(user.time)}
+                                            </span>
+                                            {user.unread > 0 && (
+                                                <span className="bg-blue-600 w-2.5 h-2.5 rounded-full mt-1"></span>
                                             )}
                                         </div>
-                                        <p className="text-[12px] text-gray-500 dark:text-gray-400 truncate font-medium mt-0.5">
-                                            {user.lastMsg || user.email}
-                                        </p>
                                     </div>
-                                    {!user.isContact && showSearchResults && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                selectUser(user);
-                                            }}
-                                            className="flex items-center gap-1 text-xs text-[#437C61] dark:text-emerald-400 font-medium px-2 py-1 rounded bg-[#437C61]/10 dark:bg-emerald-400/10 hover:bg-[#437C61]/20 dark:hover:bg-emerald-400/20 transition-colors"
-                                        >
-                                            <MessageSquare size={12} />
-                                            New
-                                        </button>
-                                    )}
-                                    {user.unread > 0 && (
-                                        <span className="bg-[#437C61] dark:bg-emerald-600 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold shadow-sm">
-                                            {user.unread}
-                                        </span>
-                                    )}
                                 </div>
-                            ))
-                        ) : (
-                            <div className="text-center py-8">
-                                <p className="text-gray-500 dark:text-gray-400">
-                                    {showSearchResults
-                                        ? "No users found"
-                                        : "No conversations yet"}
-                                </p>
                             </div>
-                        )}
+                        ))}
                     </div>
                 </div>
 
-                {/* --- RIGHT SIDE: CONVERSATION --- */}
-                <div className="flex-1 bg-white dark:bg-gray-900 rounded-[24px] flex flex-col overflow-hidden shadow-sm border border-gray-50 dark:border-gray-800">
+                {/* Main Chat Area */}
+                <div className="flex-1 flex flex-col overflow-hidden">
                     {selectedUser ? (
                         <>
-                            {/* Header */}
-                            <div className="p-6 border-b border-gray-50 dark:border-gray-800 flex justify-between items-start">
-                                <div className="flex gap-3">
-                                    <img
-                                        src={selectedUser.avatar}
-                                        className="w-11 h-11 rounded-full object-cover"
-                                        alt={selectedUser.name}
-                                        onError={(e) => {
-                                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                                selectedUser.name
-                                            )}&background=437C61&color=fff`;
-                                        }}
-                                    />
+                            <div className="h-[60px] px-4 border-b dark:border-gray-800 flex items-center justify-between bg-white dark:bg-black">
+                                <div className="flex items-center gap-3">
+                                    <div className="relative">
+                                        <img
+                                            src={
+                                                selectedUser.avatar ||
+                                                `https://ui-avatars.com/api/?name=${selectedUser.name}`
+                                            }
+                                            className="w-10 h-10 rounded-full object-cover"
+                                        />
+                                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-black rounded-full"></div>
+                                    </div>
                                     <div>
-                                        <h4 className="font-bold text-[16px] text-gray-900 dark:text-white">
+                                        <h4 className="font-bold text-[15px] leading-tight dark:text-white">
                                             {selectedUser.name}
                                         </h4>
-                                        <p className="text-[12px] text-gray-400 dark:text-gray-500 font-medium">
-                                            {selectedUser.email}
+                                        <p className="text-[12px] text-gray-500">
+                                            {isTyping
+                                                ? "Typing..."
+                                                : "Active now"}
                                         </p>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-2 text-[10px] text-gray-400 dark:text-gray-500 font-medium">
-                                    <Clock size={12} />
-                                    {messages.length > 0
-                                        ? `${messages.length} messages`
-                                        : "Start a conversation"}
                                 </div>
                             </div>
 
-                            {/* Chat Messages */}
-                            <div
-                                ref={messagesContainerRef}
-                                className="flex-1 overflow-y-auto p-6 messages-container bg-white dark:bg-gray-900 custom-scrollbar"
-                            >
-                                {messages.length > 0 ? (
-                                    Object.entries(messageGroups).map(
-                                        ([date, dateMessages]) => (
-                                            <div key={date}>
-                                                <div className="text-center text-[11px] text-gray-400 dark:text-gray-500 font-bold uppercase py-4">
-                                                    {date}
-                                                </div>
-                                                {dateMessages.map((msg) => (
-                                                    <div
-                                                        key={msg.id}
-                                                        className={`flex gap-3 mb-4 ${
-                                                            msg.is_sent_by_me
-                                                                ? "justify-end"
-                                                                : ""
-                                                        }`}
-                                                    >
-                                                        {!msg.is_sent_by_me && (
-                                                            <img
-                                                                src={
-                                                                    selectedUser.avatar
-                                                                }
-                                                                className="w-8 h-8 rounded-full mt-auto"
-                                                                alt={
-                                                                    selectedUser.name
-                                                                }
-                                                                onError={(
-                                                                    e
-                                                                ) => {
-                                                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                                                        selectedUser.name
-                                                                    )}&background=437C61&color=fff`;
-                                                                }}
-                                                            />
+                            <div className="flex-1 overflow-y-auto p-4 space-y-9 custom-scrollbar bg-white dark:bg-black flex flex-col">
+                                {messages.map((msg, i) => {
+                                    const showDate =
+                                        i === 0 ||
+                                        new Date(
+                                            msg.created_at_full
+                                        ).toDateString() !==
+                                            new Date(
+                                                messages[i - 1].created_at_full
+                                            ).toDateString();
+                                    return (
+                                        <React.Fragment key={msg.id || i}>
+                                            {showDate && (
+                                                <div className="text-center my-6">
+                                                    <span className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider">
+                                                        {new Date(
+                                                            msg.created_at_full
+                                                        ).toLocaleDateString(
+                                                            [],
+                                                            {
+                                                                month: "short",
+                                                                day: "numeric",
+                                                                year: "numeric",
+                                                                hour: "2-digit",
+                                                                minute: "2-digit",
+                                                            }
                                                         )}
-                                                        <div
-                                                            className={`max-w-[70%] ${
-                                                                msg.is_sent_by_me
-                                                                    ? "flex flex-col items-end"
-                                                                    : ""
-                                                            }`}
-                                                        >
-                                                            <div
-                                                                className={`p-3.5 rounded-2xl ${
-                                                                    msg.is_sent_by_me
-                                                                        ? "bg-[#437C61] dark:bg-emerald-600 text-white rounded-br-none"
-                                                                        : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-none"
-                                                                }`}
-                                                            >
-                                                                <p className="text-[13px] font-medium">
-                                                                    {
-                                                                        msg.message
-                                                                    }
-                                                                </p>
-                                                            </div>
-                                                            <div
-                                                                className={`text-[10px] text-gray-400 dark:text-gray-500 mt-1 px-1 ${
-                                                                    msg.is_sent_by_me
-                                                                        ? "text-right"
-                                                                        : ""
-                                                                }`}
-                                                            >
-                                                                {msg.created_at}
-                                                                {msg.is_sent_by_me && (
-                                                                    <span className="ml-1">
-                                                                        {msg.is_read ? (
-                                                                            <CheckCheck
-                                                                                size={
-                                                                                    12
-                                                                                }
-                                                                                className="inline ml-1"
-                                                                            />
-                                                                        ) : (
-                                                                            <Check
-                                                                                size={
-                                                                                    12
-                                                                                }
-                                                                                className="inline ml-1"
-                                                                            />
-                                                                        )}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            <div
+                                                className={`flex ${
+                                                    msg.is_sent_by_me
+                                                        ? "justify-end"
+                                                        : "justify-start"
+                                                } items-end gap-2 mb-1`}
+                                            >
+                                                {!msg.is_sent_by_me && (
+                                                    <img
+                                                        src={
+                                                            selectedUser.avatar ||
+                                                            `https://ui-avatars.com/api/?name=${selectedUser.name}`
+                                                        }
+                                                        className="w-7 h-7 rounded-full mb-1"
+                                                        alt="avatar"
+                                                    />
+                                                )}
+                                                <div
+                                                    className={`max-w-[70%] px-4 py-2 rounded-2xl text-[15px] shadow-sm ${
+                                                        msg.is_sent_by_me
+                                                            ? "bg-[#0084FF] text-white rounded-br-none"
+                                                            : "bg-[#F0F0F0] dark:bg-gray-800 dark:text-gray-200 rounded-bl-none text-black"
+                                                    }`}
+                                                >
+                                                    {msg.message}
+                                                </div>
                                             </div>
-                                        )
-                                    )
-                                ) : (
-                                    <div className="text-center py-12">
-                                        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                                            <MessageSquare
-                                                className="text-gray-400 dark:text-gray-500"
-                                                size={32}
-                                            />
-                                        </div>
-                                        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                            No messages yet
-                                        </h3>
-                                        <p className="text-gray-500 dark:text-gray-400 text-sm max-w-md mx-auto">
-                                            Start a conversation with{" "}
-                                            {selectedUser.name} by sending your
-                                            first message below.
-                                        </p>
-                                    </div>
-                                )}
+                                        </React.Fragment>
+                                    );
+                                })}
                                 <div ref={messagesEndRef} />
                             </div>
 
-                            {/* Message Input */}
-                            <div className="p-6 pt-2 bg-white dark:bg-gray-900">
-                                <form onSubmit={sendMessage}>
-                                    <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 p-2 rounded-2xl border border-transparent dark:border-gray-700">
-                                        <button
-                                            type="button"
-                                            className="p-2 text-gray-400 dark:text-gray-500 hover:text-[#437C61] dark:hover:text-emerald-400 transition-colors"
-                                        >
-                                            <Plus size={22} />
-                                        </button>
+                            <div className="p-4 bg-white dark:bg-black">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex-1 bg-[#F0F2F5] dark:bg-gray-800 rounded-full px-4 py-2 flex items-center">
                                         <input
-                                            type="text"
+                                            className="flex-1 bg-transparent border-none focus:ring-0 text-[15px] py-1 dark:text-white"
+                                            placeholder="Aa"
                                             value={messageText}
-                                            onChange={(e) =>
-                                                setMessageText(e.target.value)
-                                            }
-                                            placeholder={`Message ${selectedUser.name}`}
-                                            className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-3 text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
-                                            disabled={loading}
-                                            onKeyDown={(e) => {
-                                                if (
-                                                    e.key === "Enter" &&
-                                                    !e.shiftKey
-                                                ) {
-                                                    e.preventDefault();
-                                                    sendMessage(e);
-                                                }
-                                            }}
+                                            onChange={handleInputChange}
                                         />
-                                        <button
-                                            type="button"
-                                            className="p-2 text-gray-400 dark:text-gray-500 hover:text-[#437C61] dark:hover:text-emerald-400 transition-colors"
-                                        >
-                                            <Mic size={22} />
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            disabled={
-                                                !messageText.trim() || loading
-                                            }
-                                            className={`p-2 rounded-lg transition-colors ${
-                                                messageText.trim() && !loading
-                                                    ? "bg-[#437C61] dark:bg-emerald-600 text-white hover:bg-[#37634f] dark:hover:bg-emerald-700"
-                                                    : "bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                                            }`}
-                                        >
-                                            {loading ? (
-                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            ) : (
-                                                <SendHorizontal size={22} />
-                                            )}
-                                        </button>
                                     </div>
-                                </form>
+                                    <button
+                                        disabled={
+                                            !messageText.trim() || loading
+                                        }
+                                        className="text-[#0084FF] hover:opacity-80 disabled:opacity-30 transition-opacity"
+                                        onClick={sendMessage}
+                                    >
+                                        <SendHorizontal
+                                            size={24}
+                                            fill="currentColor"
+                                        />
+                                    </button>
+                                </div>
                             </div>
                         </>
                     ) : (
-                        /* Empty State when no user is selected */
-                        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-                            <div className="w-24 h-24 mb-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                                <MessageSquare
-                                    className="text-gray-400 dark:text-gray-500"
-                                    size={48}
-                                />
-                            </div>
-                            <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-3">
-                                Select a conversation
-                            </h3>
-                            <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-8">
-                                Choose a conversation from the list or search
-                                for a user to start a new chat.
+                        <div className="flex-1 flex flex-col items-center justify-center bg-white dark:bg-black">
+                            <MessageSquare
+                                size={80}
+                                className="text-gray-100 mb-4"
+                                strokeWidth={1}
+                            />
+                            <p className="text-gray-500 font-medium text-lg">
+                                Select a chat to start messaging
                             </p>
-                            <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500">
-                                <Search size={16} />
-                                <span>Search for users to start chatting</span>
-                            </div>
                         </div>
                     )}
                 </div>

@@ -17,8 +17,9 @@ class MessageController extends Controller
     {
         $authId = Auth::id();
         $selectedUserId = $request->input('selected_user');
+        $searchQuery = $request->input('search');
 
-        // Get unique contacts you have messaged with
+        // 1. Get Chat List (Users you have interacted with)
         $contactIds = Message::where('sender_id', $authId)
             ->orWhere('receiver_id', $authId)
             ->selectRaw('CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END as contact_id', [$authId])
@@ -37,42 +38,70 @@ class MessageController extends Controller
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
-                    'avatar' => $user->avatar_url ?? 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=437C61&color=fff',
+                    'email' => $user->email,
+                    'avatar' => $user->avatar ? asset('storage/'.$user->avatar) : null,
                     'lastMsg' => $lastMsg?->message ?? '',
                     'time' => $lastMsg?->created_at->toIso8601String() ?? null,
-                    'unread_count' => Message::where('sender_id', $user->id)
+                    'unread' => Message::where('sender_id', $user->id)
                         ->where('receiver_id', $authId)
                         ->where('is_read', false)->count(),
                 ];
-            })
-            // Sort by time so newest is on top
-            ->sortByDesc('time')->values();
+            })->sortByDesc('time')->values();
 
+        // 2. Handle Search Results
+        $searchUsers = [];
+        if ($searchQuery) {
+            $searchUsers = User::where('id', '!=', $authId)
+                ->where(function ($q) use ($searchQuery) {
+                    $q->where('name', 'like', "%{$searchQuery}%")
+                        ->orWhere('email', 'like', "%{$searchQuery}%");
+                })
+                ->limit(10)
+                ->get()
+                ->map(fn ($u) => [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'email' => $u->email,
+                    'avatar' => $u->avatar ? asset('storage/'.$u->avatar) : null,
+                    'isContact' => $contactIds->contains($u->id),
+                ]);
+        }
+
+        // 3. Load Messages for Selected User
         $messages = [];
         $selectedUserData = null;
         if ($selectedUserId) {
             $user = User::findOrFail($selectedUserId);
             $selectedUserData = [
-                'id' => $user->id, 'name' => $user->name, 'avatar' => $user->avatar_url ?? 'https://ui-avatars.com/api/?name='.urlencode($user->name),
+                'id' => $user->id,
+                'name' => $user->name,
+                'avatar' => $user->avatar ? asset('storage/'.$user->avatar) : null,
+                'email' => $user->email,
             ];
+
+            // Mark as read immediately on load
+            Message::where('sender_id', $selectedUserId)
+                ->where('receiver_id', $authId)
+                ->where('is_read', false)
+                ->update(['is_read' => true]);
 
             $messages = Message::where(function ($q) use ($authId, $selectedUserId) {
                 $q->where('sender_id', $authId)->where('receiver_id', $selectedUserId);
             })->orWhere(function ($q) use ($authId, $selectedUserId) {
                 $q->where('sender_id', $selectedUserId)->where('receiver_id', $authId);
             })->orderBy('created_at', 'asc')->get()->map(fn ($m) => [
-                'id' => $m->id, 'message' => $m->message, 'sender_id' => $m->sender_id,
+                'id' => $m->id,
+                'message' => $m->message,
+                'sender_id' => $m->sender_id,
                 'is_sent_by_me' => $m->sender_id == $authId,
                 'created_at_full' => $m->created_at->toIso8601String(),
                 'is_read' => $m->is_read,
             ]);
-
-            // Auto-mark as read
-            Message::where('sender_id', $selectedUserId)->where('receiver_id', $authId)->update(['is_read' => true]);
         }
 
         return Inertia::render('User/Message/Index', [
             'chatList' => $chatList,
+            'searchUsers' => $searchUsers,
             'selectedUser' => $selectedUserData,
             'messages' => $messages,
             'authUser' => ['id' => $authId, 'name' => Auth::user()->name],
@@ -81,6 +110,8 @@ class MessageController extends Controller
 
     public function store(Request $request)
     {
+        $request->validate(['receiver_id' => 'required', 'message' => 'required']);
+
         $message = Message::create([
             'sender_id' => Auth::id(),
             'receiver_id' => $request->receiver_id,
@@ -93,25 +124,16 @@ class MessageController extends Controller
         return back();
     }
 
-    public function markRead(Request $request)
-    {
-        $request->validate([
-            'sender_id' => 'required|exists:users,id',
-        ]);
-
-        // Update all unread messages from this sender to the current user
-        Message::where('sender_id', $request->sender_id)
-            ->where('receiver_id', auth()->id())
-            ->where('is_read', false)
-            ->update(['is_read' => true]);
-
-        // Return back to refresh the Inertia props (updates the sidebar counts)
-        return back();
-    }
-
     public function typing(Request $request)
     {
         broadcast(new UserTyping(Auth::user(), $request->receiver_id, $request->is_typing))->toOthers();
+    }
+
+    public function markRead(Request $request)
+    {
+        Message::where('sender_id', $request->sender_id)
+            ->where('receiver_id', Auth::id())
+            ->update(['is_read' => true]);
 
         return back();
     }

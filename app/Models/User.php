@@ -61,4 +61,28 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Message::class, 'receiver_id');
     }
+
+    public function messages()
+    {
+        return $this->hasMany(Message::class, 'sender_id')
+            ->orWhere('receiver_id', $this->id);
+    }
+
+    /**
+     * Correct implementation of lastMessage using latestOfMany.
+     * This ensures it returns a Relationship object.
+     */
+    public function lastMessage()
+    {
+        // This specifically looks for the most recent message where
+        // the user is either the sender OR receiver.
+        return $this->hasOne(Message::class, 'id', 'id') // Placeholder
+            ->select('messages.*')
+            ->from('messages')
+            ->where(function ($query) {
+                $query->where('sender_id', $this->id)
+                    ->orWhere('receiver_id', $this->id);
+            })
+            ->latest('created_at');
+    }
 }

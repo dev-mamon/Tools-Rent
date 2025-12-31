@@ -83,7 +83,10 @@ Route::controller(MessageController::class)->prefix('user/message')->name('user.
     Route::get('/', 'index')->name('index');
     Route::post('/store', 'store')->name('store');
     Route::post('/mark-read', 'markRead')->name('mark-read');
-    Route::post('/typing',  'typing')->name('typing');
+    Route::post('/typing', 'typing')->name('typing');
+    Route::post('/status', 'setStatus')->name('set-status');
+    Route::get('/more', 'getMoreMessages')->name('more');
+    Route::delete('/{message}', 'deleteMessage')->name('delete');
 });
 Route::controller(ReviewController::class)->prefix('user/review')->name('user.review.')->group(function () {
     Route::get('/', 'index')->name('index');
