@@ -81,12 +81,9 @@ Route::controller(EarningController::class)->prefix('user/earnings')->name('user
 
 Route::controller(MessageController::class)->prefix('user/message')->name('user.message.')->group(function () {
     Route::get('/', 'index')->name('index');
-    // Route::get('/create', 'create')->name('create');
-    // Route::post('/', 'store')->name('store');
-    // Route::get('/{rental}', 'show')->name('show');
-    // Route::get('/{rental}/edit', 'edit')->name('edit');
-    // Route::put('/{rental}', 'update')->name('update');
-    // Route::delete('/{rental}', 'destroy')->name('destroy');
+    Route::post('/store', 'store')->name('store');
+    Route::post('/mark-read', 'markRead')->name('mark-read');
+    Route::post('/typing',  'typing')->name('typing');
 });
 Route::controller(ReviewController::class)->prefix('user/review')->name('user.review.')->group(function () {
     Route::get('/', 'index')->name('index');
@@ -105,4 +102,5 @@ Route::controller(SettingController::class)->prefix('user/setting')->name('user.
     Route::post('/update-profile', 'updateProfile')->name('update-profile');
     Route::post('/update-password', 'updatePassword')->name('update-password');
 });
+
 require __DIR__.'/auth.php';

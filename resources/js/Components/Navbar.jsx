@@ -17,11 +17,9 @@ const Navbar = () => {
     const [searchFocused, setSearchFocused] = useState(false);
     const dropdownRef = useRef(null);
 
-    // ১. বাই ডিফল্ট লাইট মোড (false) সেট করা হয়েছে।
-    // localStorage-এ কিছু না থাকলে এটি লাইট মোড হিসেবে লোড হবে।
     const [darkMode, setDarkMode] = useState(() => {
         const savedTheme = localStorage.getItem("theme");
-        return savedTheme === "dark"; // যদি 'dark' সেভ করা থাকে তবেই true হবে, নাহলে false.
+        return savedTheme === "dark";
     });
 
     const handleLogout = (e) => {
@@ -42,7 +40,6 @@ const Navbar = () => {
         }
     };
 
-    // ৩. রিফ্রেশ দিলে থিম বজায় রাখার জন্য useEffect
     useEffect(() => {
         if (darkMode) {
             document.documentElement.classList.add("dark");

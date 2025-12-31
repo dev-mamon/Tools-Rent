@@ -73,7 +73,7 @@ const Sidebar = () => {
                     <img
                         src="/assets/images/logo.png"
                         alt="Logo"
-                        // dark:invert কালো লোগোকে ডার্ক মোডে সাদা করে দিবে
+                
                         className="w-40 object-contain transition-all duration-300 dark:invert brightness-110 contrast-125 dark:brightness-200"
                     />
                 </Link>
