@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Backend\Admin\CategoryController;
+use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\Backend\User\EarningController;
 use App\Http\Controllers\Backend\User\MessageController;
 use App\Http\Controllers\Backend\User\MyListingController;
@@ -9,25 +11,21 @@ use App\Http\Controllers\Backend\User\SettingController;
 use App\Http\Controllers\Frontend\BookingController;
 use App\Http\Controllers\Frontend\BrowseToolsController;
 use App\Http\Controllers\Frontend\HomeController;
-use App\Http\Controllers\PolicyController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
-
-Route::get('/dashboard', function () {
-
-    if (auth()->user()->is_admin === 'true') {
-        return Inertia::render('Admin/Dashboard');
-    }
-
-    return Inertia::render('User/Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard')->middleware(['auth', 'verified']);
 
 // frontend route
 Route::controller(BrowseToolsController::class)->group(function () {
     Route::get('/browse-tools', 'browseTools')->name('browse-tools');
     Route::get('/browse-tools/details/{slug}', 'browseToolsDetails')->name('browse-tools.details');
+});
+
+// category
+Route::middleware(['auth'])->group(function () {
+    Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 });
 
 // Booking Routes
@@ -104,7 +102,11 @@ Route::controller(SettingController::class)->prefix('user/setting')->name('user.
     Route::get('/legal-notice', 'legalNotice')->name('policy.legal');
     Route::get('/privacy-policy', 'privacy')->name('policy.privacy');
     // Use 'terms' or 'terms-and-conditions' for the URL
-    Route::get('/terms-conditions','terms')->name('policy.terms');
+    Route::get('/terms-conditions', 'terms')->name('policy.terms');
+});
+
+Route::fallback(function () {
+    return Inertia::render('Errors/404');
 });
 
 require __DIR__.'/auth.php';

@@ -82,7 +82,7 @@ export default function Dashboard() {
 
     return (
         <UserLayout>
-            <Head title="Dashboard" />
+            <Head title="User Dashboard" />
             <div className="space-y-6 font-sans text-[#1A1A1A] dark:text-gray-100 transition-colors duration-300">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

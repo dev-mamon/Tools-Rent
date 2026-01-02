@@ -5,9 +5,7 @@ const Header = ({ title, subtitle }) => {
     return (
         <div
             className="pt-48 pb-40 flex flex-col items-center text-center px-6 relative transition-colors duration-500
-            /* লাইট মোড গ্রাডিয়েন্ট */
             bg-gradient-to-b from-[#10513D] to-[#165E47]
-            /* ডার্ক মোড গ্রাডিয়েন্ট */
             dark:from-[#05110d] dark:to-[#0a1a15]"
         >
             {/* Subtle Overlay for better contrast */}
@@ -42,7 +40,6 @@ const Header = ({ title, subtitle }) => {
                         placeholder="Search for what you want to rent"
                         className="w-full py-4 text-[16px] text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600 border-none focus:ring-0 outline-none bg-transparent"
                     />
-
                     <button className="bg-[#10513D] dark:bg-emerald-600 hover:bg-[#1a6b52] dark:hover:bg-emerald-500 text-white px-8 md:px-12 py-4 rounded-full text-[16px] font-bold transition-all shadow-md active:scale-95 whitespace-nowrap">
                         Search
                     </button>
